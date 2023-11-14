@@ -1,12 +1,12 @@
 "use strict";
-const { createHmac, randomUUID } = require("crypto");
-const { sign } = require("jsonwebtoken");
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const {
+import { createHmac, randomUUID } from "crypto";
+import jwt from "jsonwebtoken";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
     DynamoDBDocumentClient,
     GetCommand,
     UpdateCommand,
-} = require("@aws-sdk/lib-dynamodb");
+} from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
@@ -95,7 +95,7 @@ async function putSession(username, sessionId) {
     }
 }
 
-async function handler(event) {
+export async function handler(event) {
     const body = event.body;
     let user = undefined;
     try {
@@ -140,11 +140,9 @@ async function handler(event) {
         algorithm: "HS512",
         expiresIn: "7d",
     };
-    const loginToken = sign(jwtPayload, process.env.JWT_SECRET, jwtOptions);
+    const loginToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, jwtOptions);
     return {
         statusCode: 200,
         body: loginToken,
     };
 }
-
-module.exports = { handler };

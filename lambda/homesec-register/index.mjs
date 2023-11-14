@@ -1,7 +1,7 @@
 "use strict";
-const { createHmac, randomBytes } = require("crypto");
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
+import { createHmac, randomBytes } from "crypto";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const SALT_BIT_SIZE = 128;
 
@@ -74,7 +74,7 @@ async function putOne(user) {
     );
 }
 
-async function handler(event) {
+export async function handler(event) {
     const body = event.body;
 
     let user = undefined;
@@ -109,5 +109,3 @@ async function handler(event) {
         body: `Successfully created user ${user.username}`,
     };
 }
-
-module.exports = { handler };

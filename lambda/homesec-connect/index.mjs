@@ -1,15 +1,11 @@
 "use strict";
-const {
-    verify,
-    JsonWebTokenError,
-    TokenExpiredError,
-} = require("jsonwebtoken");
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const {
+import jwt from "jsonwebtoken";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
     DynamoDBDocumentClient,
     GetCommand,
     PutCommand,
-} = require("@aws-sdk/lib-dynamodb");
+} from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
@@ -19,7 +15,7 @@ const dynamo = DynamoDBDocumentClient.from(client);
  * @returns {{username: string, sessionId: string}}
  */
 function decodeToken(token) {
-    const payload = verify(token, process.env.JWT_SECRET, {
+    const payload = jwt.verify(token, process.env.JWT_SECRET, {
         algorithms: ["HS512"],
         ignoreExpiration: false,
     });
@@ -68,7 +64,7 @@ async function putOne(connectionId, username) {
     );
 }
 
-async function handler(event) {
+export async function handler(event) {
     if (!event.headers.Authorization) {
         return {
             statusCode: 401,
@@ -90,13 +86,13 @@ async function handler(event) {
     try {
         payload = decodeToken(token);
     } catch (err) {
-        if (err instanceof TokenExpiredError) {
+        if (err instanceof jwt.TokenExpiredError) {
             return {
                 statusCode: 401,
                 body: "Token expired",
             };
         }
-        if (err instanceof JsonWebTokenError) {
+        if (err instanceof jwt.JsonWebTokenError) {
             return {
                 statusCode: 401,
                 body: "Invalid token",
@@ -144,5 +140,3 @@ async function handler(event) {
         statusCode: 200,
     };
 }
-
-module.exports = { handler };
