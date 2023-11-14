@@ -1,0 +1,5 @@
+{
+    "scripts": {
+        "zip": "7z a .\\zipped.zip .\\node_modules\\ index.js"
+    }
+}

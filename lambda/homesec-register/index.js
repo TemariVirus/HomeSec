@@ -3,7 +3,6 @@ const { createHmac, randomBytes } = require("crypto");
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
 
-const TABLE_NAME = "homesec";
 const SALT_BIT_SIZE = 128;
 
 const client = new DynamoDBClient({});
@@ -64,7 +63,7 @@ function parseUser(user) {
 async function putOne(user) {
     await dynamo.send(
         new PutCommand({
-            TableName: TABLE_NAME,
+            TableName: process.env.USER_TABLE,
             ConditionExpression: "attribute_not_exists(username)",
             Item: {
                 username: user.username,
@@ -98,7 +97,7 @@ async function handler(event) {
             };
         }
 
-        console.error("Internal server error:", err);
+        console.error(err);
         return {
             statusCode: 500,
             body: "Internal server error",

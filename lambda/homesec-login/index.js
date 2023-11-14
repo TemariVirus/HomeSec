@@ -30,7 +30,7 @@ async function getUserCreds(username) {
     try {
         const data = await dynamo.send(
             new GetCommand({
-                TableName: process.env.TABLE_NAME,
+                TableName: process.env.USER_TABLE,
                 Key: {
                     username: username,
                 },
@@ -78,7 +78,7 @@ async function putSession(username, sessionId) {
     try {
         await dynamo.send(
             new UpdateCommand({
-                TableName: process.env.TABLE_NAME,
+                TableName: process.env.USER_TABLE,
                 Key: {
                     username: username,
                 },
