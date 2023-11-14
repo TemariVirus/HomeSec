@@ -1,5 +1,5 @@
 "use strict";
-var crypto = require("crypto");
+const { createHmac, randomBytes } = require("crypto");
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
 
@@ -14,8 +14,7 @@ const dynamo = DynamoDBDocumentClient.from(client);
  * @returns {string}
  */
 function generateSalt(length) {
-    return crypto
-        .randomBytes(Math.ceil(length / 2))
+    return randomBytes(Math.ceil(length / 2))
         .toString("hex")
         .slice(0, length);
 }
@@ -26,7 +25,7 @@ function generateSalt(length) {
  * @returns {string}
  */
 function hash(password, salt) {
-    let hash = crypto.createHmac("sha512", salt);
+    let hash = createHmac("sha512", salt);
     hash.update(password);
     return hash.digest("hex");
 }
@@ -41,6 +40,9 @@ function parseUser(user) {
     const password = user.password.trim();
     if (username.length === 0) {
         throw new Error("Username cannot be empty");
+    }
+    if (username.length > 255) {
+        throw new Error("Username cannot be longer than 255 characters");
     }
     if (password.length < 8) {
         throw new Error("Password must be at least 8 characters long");
@@ -96,6 +98,7 @@ async function handler(event) {
             };
         }
 
+        console.error("Internal server error:", err);
         return {
             statusCode: 500,
             body: "Internal server error",
