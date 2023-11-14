@@ -1,3 +1,5 @@
+"use strict";
+
 async function handler(event) {
     // remove connecttion id from database
     //
