@@ -52,7 +52,7 @@ async function verifySession(username, sessionId) {
  * @param {string} username
  * @returns {Promise<void>}
  */
-async function putOne(connectionId, username) {
+async function putConnection(connectionId, username) {
     await dynamo.send(
         new PutCommand({
             TableName: process.env.CONNECTION_TABLE,
@@ -127,7 +127,7 @@ export async function handler(event) {
 
     const connectionId = event.requestContext.connectionId;
     try {
-        await putOne(connectionId, payload.username);
+        await putConnection(connectionId, payload.username);
     } catch (err) {
         console.error(err);
         return {

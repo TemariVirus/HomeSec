@@ -49,8 +49,8 @@ async function getUserCreds(username) {
  * @param {string} user
  * @returns {{username: string, password: string}}
  */
-function parseUser(user) {
-    user = JSON.parse(user);
+function parseUser(body) {
+    const user = JSON.parse(body);
     const username = user.username.trim();
     const password = user.password.trim();
     if (username.length === 0) {

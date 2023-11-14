@@ -60,7 +60,7 @@ function parseUser(user) {
  * @param {{username: string, password: string, salt: string}} user
  * @returns {Promise<void>}
  */
-async function putOne(user) {
+async function putUser(user) {
     await dynamo.send(
         new PutCommand({
             TableName: process.env.USER_TABLE,
@@ -88,7 +88,7 @@ export async function handler(event) {
     }
 
     try {
-        await putOne(user);
+        await putUser(user);
     } catch (err) {
         if (err.__type?.endsWith("#ConditionalCheckFailedException")) {
             return {
