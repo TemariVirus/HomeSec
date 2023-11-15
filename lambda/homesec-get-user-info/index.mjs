@@ -1,3 +1,5 @@
+// TODO: send message to mqtt to get devices to send current state
+// and stream responses to client
 "use strict";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
