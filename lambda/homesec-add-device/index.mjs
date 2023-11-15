@@ -1,4 +1,5 @@
 "use strict";
+import { randomUUID } from "crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
     DynamoDBDocumentClient,
@@ -29,30 +30,38 @@ async function getUsername(connectionId) {
 
 /**
  * @param {object} data
- * @returns {{
- *     name: string,
- *     streamUrl: string,
- *     battery: number,
- * } | null}
+ * @returns {{ streamUrl: string } | null}
  */
 function transformCamera(data) {
     if (
-        typeof data.name !== "string" ||
-        typeof data.streamUrl !== "string" ||
-        typeof data.battery !== "number" ||
-        data.name.length === 0 ||
+        typeof data.streamUrl !== "string"
         // TODO: Validate stream URL
-        data.battery < 0 ||
-        data.battery > 100
     ) {
         return null;
     }
 
-    return {
-        name: data.name,
-        streamUrl: data.streamUrl,
-        battery: data.battery,
-    };
+    return { streamUrl: data.streamUrl };
+}
+
+/**
+ * @param {object} data
+ * @returns {{ isOpen: boolean } | null}
+ */
+function transformContact(data) {
+    if (typeof data.isOpen !== "boolean") {
+        return null;
+    }
+
+    return { isOpen: data.isOpen };
+}
+
+/**
+ * @param {object} data
+ * @returns {{ isOpen: boolean } | null}
+ */
+function transformShock(data) {
+    // Assume window/door is not broken when device is added
+    return { isOpen: false };
 }
 
 /**
@@ -61,22 +70,60 @@ function transformCamera(data) {
  */
 function parseDevice(body) {
     const data = JSON.parse(body);
+
+    // Verify common fields
+    if (
+        typeof data.name !== "string" ||
+        typeof data.battery !== "number" ||
+        typeof data.type !== "string" ||
+        data.name.length === 0 ||
+        data.battery < 0 ||
+        data.battery > 100
+    ) {
+        return null;
+    }
+
     let device;
     switch (data.type) {
         case "camera":
             device = transformCamera(data);
             break;
         case "contact":
+            device = transformContact(data);
             break;
         case "shock":
+            device = transformShock(data);
             break;
-
-        default:
-            return null;
+    }
+    if (!device) {
+        return null;
     }
 
-    // TODO: add device ID
+    device.id = randomUUID().replace(/-/g, "");
+    device.name = data.name;
+    device.battery = data.battery;
+    device.type = data.type;
     return device;
+}
+
+/**
+ * @param {string} username
+ * @param {object} device
+ * @returns {Promise<void>}
+ */
+async function addDevice(username, device) {
+    await dynamo.send(
+        new UpdateCommand({
+            TableName: process.env.USER_TABLE,
+            Key: {
+                username: username,
+            },
+            UpdateExpression: "SET devices = list_append(devices, :device)",
+            ExpressionAttributeValues: {
+                ":device": device,
+            },
+        })
+    );
 }
 
 export async function handler(event) {
@@ -98,7 +145,15 @@ export async function handler(event) {
         };
     }
 
-    // TODO: Add device to user table
+    try {
+        await addDevice(username, device);
+    } catch (err) {
+        console.error(err);
+        return {
+            statusCode: 500,
+            body: "Failed to add device",
+        };
+    }
 
     return {
         statusCode: 200,

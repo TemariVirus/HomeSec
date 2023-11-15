@@ -69,6 +69,8 @@ async function putUser(user) {
                 username: user.username,
                 password: user.password,
                 salt: user.salt,
+                isArmed: false,
+                devices: [],
             },
         })
     );
