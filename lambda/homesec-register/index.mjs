@@ -37,8 +37,8 @@ function parseUser(user) {
     user = JSON.parse(user);
     const username = user.username.trim();
     const password = user.password.trim();
-    if (username.length === 0) {
-        throw new Error("Username cannot be empty");
+    if (username.length < 3) {
+        throw new Error("Username must have at least 3 characters");
     }
     if (username.length > 255) {
         throw new Error("Username cannot be longer than 255 characters");

@@ -69,14 +69,14 @@ function transformShock(data) {
  * @returns {object | null}
  */
 function parseDevice(body) {
-    const data = JSON.parse(body);
+    const data = JSON.parse(body ?? "{}").data ?? {};
 
     // Verify common fields
     if (
         typeof data.name !== "string" ||
         typeof data.battery !== "number" ||
         typeof data.type !== "string" ||
-        data.name.length === 0 ||
+        data.name?.length === 0 ||
         data.battery < 0 ||
         data.battery > 100
     ) {
@@ -118,9 +118,12 @@ async function addDevice(username, device) {
             Key: {
                 username: username,
             },
-            UpdateExpression: "SET devices = list_append(devices, :device)",
+            UpdateExpression: "SET #d = list_append(#d, :device)",
+            ExpressionAttributeNames: {
+                "#d": "devices",
+            },
             ExpressionAttributeValues: {
-                ":device": device,
+                ":device": [device],
             },
         })
     );
