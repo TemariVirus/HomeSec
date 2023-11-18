@@ -1,0 +1,83 @@
+:root {
+    --default-fonts: Roboto, "Segoe UI", sans-serif;
+    --emphasis-fonts: Georgia, "Times New Roman", Times, serif;
+
+    font-family: var(--default-fonts);
+    font-weight: normal;
+
+    color: #fff;
+    background-color: #222;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+
+    max-width: 100%;
+    max-height: 100%;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+section {
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #333;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    font-size: 32px;
+    color: #fff;
+}
+
+h2 {
+    font-size: 24px;
+    color: #fff;
+}
+
+p {
+    color: #fff;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+img {
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+button {
+    border: 1px solid transparent;
+    cursor: pointer;
+    padding: 0.6rem 1.2rem;
+    transition: border-color 0.25s;
+}
+
+button:hover {
+    border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+}
+
+.small-text {
+    font-size: 16px;
+}
+
+.rounded-full {
+    border-radius: 100vw;
+}

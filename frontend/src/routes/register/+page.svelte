@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { PUBLIC_REST_API } from "$env/static/public";
     import About from "$lib/components/about.svelte";
 
-    let username = "";
-    let password = "";
+    let username = "",
+        password = "";
 
-    function handleLogin(): void {}
+    function handleRegister(): void {
+        console.log(username);
+    }
 </script>
 
 <div class="container">
@@ -13,8 +14,8 @@
         <About />
     </div>
     <div class="right">
-        <h1>Log in</h1>
-        <form on:submit|preventDefault={handleLogin}>
+        <h1>Register</h1>
+        <form on:submit|preventDefault={handleRegister}>
             <label for="username">Username</label>
             <input
                 bind:value={username}
@@ -33,10 +34,10 @@
                 placeholder="Password"
             />
             <p class="small-text redirect-text">
-                No account? <a href="/register">Register</a>
+                Have an account? <a href="/">Log in</a>
             </p>
             <br />
-            <button class="rounded-full" type="submit">Log in</button>
+            <button class="rounded-full" type="submit">Register</button>
         </form>
     </div>
 </div>
