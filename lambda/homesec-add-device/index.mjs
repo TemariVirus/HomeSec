@@ -1,5 +1,17 @@
+/* Expected event body: {
+ *     "action": "add-device",
+ *     "data": JSON.stringify({
+ *         "name": string,
+ *         "battery": number,
+ *         "type": "camera" | "contact" | "shock",
+ *         "streamUrl": string?,
+ *         "isOpen": boolean?,
+ *     }),
+ * }
+ */
+
 "use strict";
-import { randomUUID } from "crypto";
+import { randomBytes } from "crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
     DynamoDBDocumentClient,
@@ -99,7 +111,7 @@ function parseDevice(body) {
         return null;
     }
 
-    device.id = randomUUID().replace(/-/g, "");
+    device.id = randomBytes(9).toString("base64");
     device.name = data.name;
     device.battery = data.battery;
     device.type = data.type;
@@ -160,5 +172,6 @@ export async function handler(event) {
 
     return {
         statusCode: 200,
+        body: JSON.stringify(device),
     };
 }

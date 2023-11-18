@@ -1,3 +1,8 @@
+// Device responsibilities:
+// - send all info when connected
+// - send all info when requested
+// - send state info when changed
+// - disconnect when removed
 import { mqtt, iot } from "aws-iot-device-sdk-v2";
 import readline from "readline";
 
@@ -8,13 +13,15 @@ const KEY_PATH =
 const CA_PATH = "AmazonRootCA1.pem";
 const ENDPOINT = "a1ujiwut160nuw-ats.iot.us-east-1.amazonaws.com";
 
+const USERNAME = "test";
+const DEVICE_ID = "CTf3745VvOlF";
+
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
-const dec = new TextDecoder();
+const decoder = new TextDecoder();
 
-// Creates and returns a MQTT connection using a certificate file and key file
 function build_connection() {
     let config_builder =
         iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(
@@ -25,9 +32,7 @@ function build_connection() {
     config_builder.with_certificate_authority_from_path(undefined, CA_PATH);
 
     config_builder.with_clean_session(false);
-    config_builder.with_client_id(
-        "test-" + Math.floor(Math.random() * 100000000)
-    );
+    config_builder.with_client_id(DEVICE_ID);
     config_builder.with_endpoint(ENDPOINT);
     const config = config_builder.build();
 
@@ -37,12 +42,17 @@ function build_connection() {
 
 const connection = build_connection();
 
-console.log("Connecting...");
 await connection.connect();
-console.log("Connection completed.");
+console.log("Connected.");
 
-connection.subscribe("ttt", mqtt.QoS.AtLeastOnce, (topic, payload) => {
-    const str = dec.decode(payload);
+rl.on("close", async function () {
+    await connection.disconnect();
+    console.log("Disconnected.");
+    process.exit(0);
+});
+
+connection.subscribe(USERNAME, mqtt.QoS.AtLeastOnce, (topic, payload) => {
+    const str = decoder.decode(payload);
     const data = JSON.parse(str);
     console.log(
         `Received message from topic [${topic}]: ${JSON.stringify(data)}`
@@ -50,15 +60,7 @@ connection.subscribe("ttt", mqtt.QoS.AtLeastOnce, (topic, payload) => {
 });
 
 connection.publish(
-    "ttt",
+    `${USERNAME}${DEVICE_ID}`,
     JSON.stringify({ hello: "world" }),
     mqtt.QoS.AtLeastOnce
 );
-
-rl.on("close", async function () {
-    console.log("Disconnecting...");
-    await connection.disconnect();
-    console.log("Disconnect completed.");
-
-    process.exit(0);
-});

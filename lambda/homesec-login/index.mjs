@@ -1,5 +1,5 @@
 "use strict";
-import { createHmac, randomUUID } from "crypto";
+import { createHmac, randomBytes } from "crypto";
 import jwt from "jsonwebtoken";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
@@ -123,7 +123,7 @@ export async function handler(event) {
         };
     }
 
-    const sessionId = randomUUID().replace(/-/g, "");
+    const sessionId = randomBytes(18).toString("base64");
     const putSessionSuccess = await putSession(user.username, sessionId);
     if (!putSessionSuccess) {
         return {

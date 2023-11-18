@@ -1,5 +1,10 @@
 // TODO: send message to mqtt to get devices to send current state
 // another lambda will stream responses to client and client will handle timeout to determine if no battery
+/* Expected event body: {
+ *     "action": "get-info",
+ * }
+ */
+
 "use strict";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
