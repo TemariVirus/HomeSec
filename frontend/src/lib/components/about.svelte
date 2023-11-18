@@ -3,7 +3,7 @@
 </script>
 
 <h1>HomeSec</h1>
-<p>Next-gen home security for all</p>
+<p>Next-generation home security for all</p>
 <img src={logo} alt="HomeSec logo" height="500" />
 
 <style>

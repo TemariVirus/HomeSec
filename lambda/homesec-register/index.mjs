@@ -76,6 +76,31 @@ async function putUser(user) {
     );
 }
 
+/**
+ * @param {number} status
+ * @param {string | undefined} body
+ * @returns {{
+ *     statusCode: number,
+ *     headers: {
+ *         Content-Type: string,
+ *         Access-Control-Allow-Origin: string,
+ *         Access-Control-Allow-Methods: string
+ *     },
+ *     body: string
+ * }}
+ */
+function formatResponse(status, body) {
+    return {
+        statusCode: status,
+        headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST",
+        },
+        body: body,
+    };
+}
+
 export async function handler(event) {
     const body = event.body;
 
@@ -83,31 +108,19 @@ export async function handler(event) {
     try {
         user = parseUser(body);
     } catch (err) {
-        return {
-            statusCode: 400,
-            body: err.message,
-        };
+        return formatResponse(400, err.message);
     }
 
     try {
         await putUser(user);
     } catch (err) {
         if (err.__type?.endsWith("#ConditionalCheckFailedException")) {
-            return {
-                statusCode: 409,
-                body: `User ${user.username} already exists`,
-            };
+            return formatResponse(409, `User ${user.username} already exists`);
         }
 
         console.error(err);
-        return {
-            statusCode: 500,
-            body: "Internal server error",
-        };
+        return formatResponse(500, "Internal server error");
     }
 
-    return {
-        statusCode: 200,
-        body: `Successfully created user ${user.username}`,
-    };
+    return formatResponse(200);
 }

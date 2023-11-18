@@ -1,11 +1,50 @@
 <script lang="ts">
     import About from "$lib/components/about.svelte";
+    import { setAuthToken } from "$lib/auth";
+    import { PUBLIC_USER_API } from "$env/static/public";
 
-    let username = "",
-        password = "";
+    let username = "";
+    let password = "";
 
     function handleRegister(): void {
-        console.log(username);
+        fetch(PUBLIC_USER_API, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password,
+            }),
+        })
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+            })
+            .then(() =>
+                fetch(`${PUBLIC_USER_API}/login`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                    }),
+                })
+            )
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+                return res.text();
+            })
+            .then((res) => {
+                setAuthToken(res);
+                window.location.href = "/dashboard";
+            })
+            .catch((err) => alert(err));
     }
 </script>
 

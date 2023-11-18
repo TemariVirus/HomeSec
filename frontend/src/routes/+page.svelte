@@ -1,11 +1,34 @@
 <script lang="ts">
-    import { PUBLIC_REST_API } from "$env/static/public";
     import About from "$lib/components/about.svelte";
+    import { setAuthToken } from "$lib/auth";
+    import { PUBLIC_USER_API } from "$env/static/public";
 
     let username = "";
     let password = "";
 
-    function handleLogin(): void {}
+    function handleLogin(): void {
+        fetch(`${PUBLIC_USER_API}/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password,
+            }),
+        })
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+                return res.text();
+            })
+            .then((res) => {
+                setAuthToken(res);
+                window.location.href = "/dashboard";
+            })
+            .catch((err) => alert(err));
+    }
 </script>
 
 <div class="container">

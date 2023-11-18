@@ -1,9 +1,13 @@
 <div class="absolute-center">
     <div class="loading-spinner" />
-    <h1 class="huge-text">Loading...</h1>
+    <h1>Loading...</h1>
 </div>
 
 <style>
+    h1 {
+        font-size: 84px;
+    }
+
     .loading-spinner {
         border: 16px solid #f3f3f3;
         border-top: 16px solid #3498db;

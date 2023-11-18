@@ -65,23 +65,14 @@ async function putConnection(connectionId, username) {
 }
 
 export async function handler(event) {
-    if (!event.headers.Authorization) {
+    const token = event.queryStringParameters?.token;
+    if (!token) {
         return {
             statusCode: 401,
-            body: "Missing Authorization header",
+            body: "Missing Authorization token",
         };
     }
 
-    const auth = event.headers.Authorization;
-    const authType = auth.split(" ")[0];
-    if (authType !== "Bearer") {
-        return {
-            statusCode: 401,
-            body: "Requires JWT bearer token in Authorization header",
-        };
-    }
-
-    const token = auth.split(" ")[1];
     let payload;
     try {
         payload = decodeToken(token);
