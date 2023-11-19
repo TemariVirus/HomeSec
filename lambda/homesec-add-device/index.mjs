@@ -1,3 +1,5 @@
+// TODO: Create rules engine rule to listen for device on user/deviceId topic
+// before returning from this function.
 /* Expected event body: {
  *     "action": "add-device",
  *     "data": string,
