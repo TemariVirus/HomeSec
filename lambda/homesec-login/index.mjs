@@ -118,6 +118,7 @@ function formatResponse(status, body) {
         body: body,
     };
 }
+
 export async function handler(event) {
     const body = event.body;
     let user = undefined;

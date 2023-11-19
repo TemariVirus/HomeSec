@@ -60,7 +60,7 @@ connection.subscribe(USERNAME, mqtt.QoS.AtLeastOnce, (topic, payload) => {
 });
 
 connection.publish(
-    `${USERNAME}${DEVICE_ID}`,
+    `${USERNAME}/${DEVICE_ID}`,
     JSON.stringify({ hello: "world" }),
     mqtt.QoS.AtLeastOnce
 );

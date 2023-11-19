@@ -40,7 +40,7 @@ async function getUserInfo(username) {
             Key: {
                 username: username,
             },
-            ProjectionExpression: "isArmed, devices",
+            ProjectionExpression: "username, isArmed, devices",
         })
     );
     return data.Item ?? null;
@@ -75,8 +75,9 @@ export async function handler(event) {
         };
     }
 
+    const action = JSON.parse(event.body).action;
     return {
         statusCode: 200,
-        body: JSON.stringify(userInfo),
+        body: JSON.stringify({ action: action, data: userInfo }),
     };
 }

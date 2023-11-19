@@ -1,5 +1,5 @@
 <script lang="ts">
-    import About from "$lib/components/about.svelte";
+    import About from "$lib/components/About.svelte";
     import { setAuthToken } from "$lib/auth";
     import { PUBLIC_USER_API } from "$env/static/public";
 

@@ -1,16 +1,15 @@
 /* Expected event body: {
- *     "action": "add-device",
+ *     "action": "cancel-add-device",
  *     "data": string,
  * }
  */
 
 "use strict";
-import { randomBytes } from "crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
     DynamoDBDocumentClient,
     GetCommand,
-    PutCommand,
+    DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
@@ -37,16 +36,14 @@ async function getUsername(connectionId) {
 /**
  * @param {string} username
  * @param {string} deviceId
- * @param {string} name
  * @returns {Promise<void>}
  */
-async function addDevice(username, deviceId, name) {
+async function removeDevice(username, deviceId) {
     await dynamo.send(
-        new PutCommand({
+        new DeleteCommand({
             TableName: process.env.DEVICE_TABLE,
-            Item: {
+            Key: {
                 key: `${username}/${deviceId}`,
-                name: name,
             },
         })
     );
@@ -63,8 +60,8 @@ export async function handler(event) {
         };
     }
 
-    const name = body?.data;
-    if (typeof name !== "string" || name.length === 0) {
+    const deviceId = body?.data;
+    if (typeof deviceId !== "string" || deviceId.length === 0) {
         return {
             statusCode: 400,
             body: "Invalid request body",
@@ -80,9 +77,8 @@ export async function handler(event) {
         };
     }
 
-    const deviceId = randomBytes(9).toString("base64");
     try {
-        await addDevice(username, deviceId, name);
+        await removeDevice(username, deviceId);
     } catch (err) {
         console.error(err);
         return {
@@ -93,6 +89,5 @@ export async function handler(event) {
 
     return {
         statusCode: 200,
-        body: JSON.stringify({ action: body.action, data: deviceId }),
     };
 }

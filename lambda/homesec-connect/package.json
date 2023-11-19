@@ -1,7 +1,7 @@
 {
     "scripts": {
-        "connect": "npm i -g wscat | wscat -c wss://yjrwbj2w60.execute-api.us-east-1.amazonaws.com/Prod/ -H \"Authorization:Bearer ${npm_config_token}\"",
-        "zip": "7z a .\\zipped.zip .\\node_modules\\ index.js"
+        "connect": "wscat -c wss://yjrwbj2w60.execute-api.us-east-1.amazonaws.com/Prod/?token=${npm_config_token}",
+        "zip": "7z a .\\zipped.zip .\\node_modules\\ index.mjs"
     },
     "dependencies": {
         "jsonwebtoken": "^9.0.2"

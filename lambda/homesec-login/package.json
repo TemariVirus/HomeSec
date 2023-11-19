@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "zip": "7z a .\\zipped.zip .\\node_modules\\ index.js"
+        "zip": "7z a .\\zipped.zip .\\node_modules\\ index.mjs"
     },
     "dependencies": {
         "jsonwebtoken": "^9.0.2"
