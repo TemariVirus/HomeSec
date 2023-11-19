@@ -23,24 +23,18 @@ function decodeToken(token) {
 
 /**
  * @param {string} username
- * @returns {Promise<boolean>}
+ * @returns {Promise<void>}
  */
 async function deleteSession(username) {
-    try {
-        await dynamo.send(
-            new UpdateCommand({
-                TableName: process.env.USER_TABLE,
-                Key: {
-                    username: username,
-                },
-                UpdateExpression: "REMOVE sessionId",
-            })
-        );
-        return true;
-    } catch (err) {
-        console.error(err);
-        return false;
-    }
+    await dynamo.send(
+        new UpdateCommand({
+            TableName: process.env.USER_TABLE,
+            Key: {
+                username: username,
+            },
+            UpdateExpression: "REMOVE sessionId",
+        })
+    );
 }
 
 /**
@@ -84,33 +78,21 @@ export async function handler(event) {
         payload = decodeToken(token);
     } catch (err) {
         if (err instanceof jwt.TokenExpiredError) {
-            return {
-                statusCode: 401,
-                body: "Token expired",
-            };
+            return formatResponse(401, "Token expired");
         }
         if (err instanceof jwt.JsonWebTokenError) {
-            return {
-                statusCode: 401,
-                body: "Invalid token",
-            };
+            return formatResponse(401, "Invalid token");
         }
 
         console.error(err);
-        return {
-            statusCode: 500,
-            body: "Unable to verify token",
-        };
+        return formatResponse(500, "Unable to verify token");
     }
 
     try {
-        deleteSession(payload.username);
+        await deleteSession(payload.username);
     } catch (err) {
         console.error(err);
-        return {
-            statusCode: 500,
-            body: "Unable to delete login session",
-        };
+        return formatResponse(500, "Unable to delete login session");
     }
     return formatResponse(200);
 }

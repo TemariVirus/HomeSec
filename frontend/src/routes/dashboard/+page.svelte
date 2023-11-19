@@ -2,6 +2,8 @@
     import { onMount } from "svelte";
     import { get } from "svelte/store";
     import { websocket as Websocket } from "@sveu/browser";
+
+    import { goto } from "$app/navigation";
     import { getAuthToken, clearAuthToken } from "$lib/auth";
     import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
     import SortableList from "$lib/components/SortableList.svelte";
@@ -41,7 +43,7 @@
         const temp = connect();
         if (!temp) {
             clearAuthToken();
-            window.location.href = "/";
+            goto("/");
             return;
         }
 
@@ -64,7 +66,7 @@
             },
             onError: (_) => {
                 clearAuthToken();
-                window.location.href = "/";
+                goto("/");
             },
         });
     }
@@ -155,20 +157,23 @@
     }
 
     function logout() {
+        const token = getAuthToken();
         clearAuthToken();
         ws?.close();
-        fetch(`${PUBLIC_USER_API}/login}`, {
+
+        fetch(`${PUBLIC_USER_API}/login`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${getAuthToken()}`,
+                Authorization: `Bearer ${token}`,
             },
         })
+            .then((res) => res.text())
             .catch((res) => {
                 console.error("Failed to logout:", res);
             })
             .finally(() => {
-                window.location.href = "/";
+                goto("/");
             });
     }
 </script>

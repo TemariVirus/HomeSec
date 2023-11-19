@@ -2,6 +2,7 @@
     import About from "$lib/components/About.svelte";
     import { setAuthToken } from "$lib/auth";
     import { PUBLIC_USER_API } from "$env/static/public";
+    import { goto } from "$app/navigation";
 
     let username = "";
     let password = "";
@@ -42,7 +43,7 @@
             })
             .then((res) => {
                 setAuthToken(res);
-                window.location.href = "/dashboard";
+                goto("/dashboard");
             })
             .catch((err) => alert(err));
     }

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import About from "$lib/components/About.svelte";
     import { setAuthToken } from "$lib/auth";
     import { PUBLIC_USER_API } from "$env/static/public";
@@ -25,7 +26,7 @@
             })
             .then((res) => {
                 setAuthToken(res);
-                window.location.href = "/dashboard";
+                goto("/dashboard");
             })
             .catch((err) => alert(err));
     }

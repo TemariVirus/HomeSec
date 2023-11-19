@@ -1,5 +1,8 @@
 {
-  "dependencies": {
-    "jsonwebtoken": "^9.0.2"
-  }
+    "scripts": {
+        "zip": "7z a .\\zipped.zip .\\node_modules\\ index.mjs"
+    },
+    "dependencies": {
+        "jsonwebtoken": "^9.0.2"
+    }
 }
