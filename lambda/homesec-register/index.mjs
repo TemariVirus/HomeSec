@@ -48,10 +48,9 @@ function parseUser(user) {
     }
 
     const salt = generateSalt(SALT_BIT_SIZE / 4);
-    const hashed = hash(password, salt);
     return {
         username: username,
-        password: hashed,
+        password: hash(password, salt),
         salt: salt,
     };
 }
@@ -69,6 +68,7 @@ async function putUser(user) {
                 username: user.username,
                 password: user.password,
                 salt: user.salt,
+                topicName: randomBytes(18).toString("base64"),
                 isArmed: false,
                 devices: [],
             },

@@ -42,7 +42,7 @@ yargs
     )
     .parse();
 
-function build_connection(argv) {
+function buildConnection(argv) {
     let config_builder =
         iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(
             CERT_PATH,
@@ -59,19 +59,43 @@ function build_connection(argv) {
     return client.new_connection(config);
 }
 
+function handleMessage(topic, payload) {
+    const str = decoder.decode(payload);
+    const data = JSON.parse(str);
+    console.log(
+        `Received message from topic [${topic}]: ${JSON.stringify(data)}`
+    );
+}
+
 async function main(argv) {
-    const connection = build_connection(argv);
+    const connection = buildConnection(argv);
 
     await connection.connect();
     console.log("Connected.");
+
+    // Disconnect on close
     rl.on("close", async () => {
         await connection.disconnect();
         console.log("Disconnected.");
         process.exit(0);
     });
 
+    // Send data from user input
+    rl.on("line", (line) => {
+        connection
+            .publish(
+                `${argv.username}/${argv["device-id"]}`,
+                line.trim(),
+                mqtt.QoS.AtLeastOnce
+            )
+            .then((req) => {
+                console.log("Published packet with ID:", req.packet_id);
+            });
+    });
+
+    // Subscribe to get user salt
     connection.subscribe(
-        argv.username,
+        `${argv.username}/${argv["device-id"]}`,
         mqtt.QoS.AtLeastOnce,
         (topic, payload) => {
             const str = decoder.decode(payload);
@@ -81,19 +105,19 @@ async function main(argv) {
                     data
                 )}`
             );
+
+            switch (data.action) {
+                case "topicName":
+                    // Subscribe to get messages from cloud
+                    connection.subscribe(
+                        `${argv.username}/${data.data}`,
+                        mqtt.QoS.AtLeastOnce,
+                        handleMessage
+                    );
+                    break;
+                case "remove":
+                    break;
+            }
         }
     );
-
-    connection
-        .publish(
-            `${argv.username}/${argv["device-id"]}`,
-            JSON.stringify({ hello: "world" }),
-            mqtt.QoS.AtLeastOnce
-        )
-        .then(() => {
-            console.log(
-                "Published message:",
-                JSON.stringify({ hello: "world" })
-            );
-        });
 }
