@@ -1,5 +1,3 @@
-// TODO: Create rules engine rule to listen for device on user/deviceId topic
-// before returning from this function.
 /* Expected event body: {
  *     "action": "add-device",
  *     "data": string,
@@ -82,7 +80,10 @@ export async function handler(event) {
         };
     }
 
-    const deviceId = randomBytes(9).toString("base64");
+    const deviceId = randomBytes(9)
+        .toString("base64")
+        .replace(/\+/g, "%")
+        .replace(/\//g, "_");
     try {
         await addDevice(username, deviceId, name);
     } catch (err) {

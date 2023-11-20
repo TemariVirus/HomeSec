@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher, onDestroy } from "svelte";
-    import exit from "$lib/images/exit.svg";
+    import exitIcon from "$lib/images/exit.svg";
 
     const dispatch = createEventDispatcher();
     const close = () => {
@@ -67,7 +67,7 @@
         <button class="cancel-btn" on:click={close}>
             <img
                 style="width: 2.5rem; height: 2.5rem"
-                src={exit}
+                src={exitIcon}
                 alt="cancel"
                 width="54"
                 height="54"

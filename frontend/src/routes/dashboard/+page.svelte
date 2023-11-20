@@ -4,38 +4,25 @@
     import { websocket as Websocket } from "@sveu/browser";
 
     import { goto } from "$app/navigation";
-    import { getAuthToken, clearAuthToken } from "$lib/auth";
+    import DeviceItem from "$lib/components/DeviceItem.svelte";
     import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
-    import SortableList from "$lib/components/SortableList.svelte";
     import Modal from "$lib/components/Modal.svelte";
-    import { PUBLIC_USER_API, PUBLIC_WEBSOCKET_API } from "$env/static/public";
+    import SortableList from "$lib/components/SortableList.svelte";
 
-    type CameraDevice = {
-        id: string;
-        name: string;
-        battery: number;
-        type: "camera";
-        streamUrl: string;
-    };
-    type ContactShockDevice = {
-        id: string;
-        name: string;
-        battery: number;
-        type: "contact" | "shock";
-        isOpen: boolean;
-    };
-    type Device = CameraDevice | ContactShockDevice;
+    import { getAuthToken, clearAuthToken } from "$lib/auth";
+    import type { Device } from "$lib/types";
+    import { PUBLIC_USER_API, PUBLIC_WEBSOCKET_API } from "$env/static/public";
 
     let isAddingDevice = false;
     let addDeviceId = "";
     let addDeviceName = "";
+    let addDeviceRefreshInterval: ReturnType<typeof setInterval>;
+    let showAddModal = false;
 
     let initialised = false;
     let username = "";
     let devices = [] as Device[];
     let isArmed = false;
-
-    let showAddModal = false;
 
     let ws: ReturnType<typeof Websocket>;
     let websocket: WebSocket;
@@ -91,15 +78,26 @@
                 initialised = true;
                 username = data.username;
                 devices = sortDevices(data.devices);
-                localStorage.setItem(
-                    "deviceOrder",
-                    devices.map((d) => d.id).join(",")
-                );
+                saveDeviceOrder();
                 isArmed = data.isArmed;
+
+                if (addDeviceId !== "") {
+                    const added = devices.some((d) => d.id === addDeviceId);
+                    if (added) {
+                        addDeviceId = "";
+                        addDeviceName = "";
+                        clearInterval(addDeviceRefreshInterval);
+                        showAddModal = false;
+                    }
+                }
                 break;
             case "add-device":
                 addDeviceId = data;
                 isAddingDevice = false;
+                addDeviceRefreshInterval = setInterval(
+                    () => getInfo(websocket),
+                    3000
+                );
                 break;
         }
     }
@@ -151,9 +149,22 @@
         return newDevices;
     }
 
-    function handleSort(e: any) {
-        devices = e.detail;
+    function saveDeviceOrder() {
         localStorage.setItem("deviceOrder", devices.map((d) => d.id).join(","));
+    }
+
+    function handleSort(e: CustomEvent<Device[]>) {
+        devices = e.detail;
+        saveDeviceOrder();
+    }
+
+    function handleRemove(e: CustomEvent<number>) {
+        const index = e.detail;
+        const id = devices[index].id;
+        devices.splice(index, 1);
+        devices = devices; // Needed to trigger reactivity
+        saveDeviceOrder();
+        ws?.send(JSON.stringify({ action: "remove-device", data: id }));
     }
 
     function logout() {
@@ -209,12 +220,22 @@
         {/if}
     </Modal>
 
-    <h1>Hello, {username}!</h1>
-    <SortableList list={devices} key="id" on:sort={handleSort} let:item>
-        <p>{item.id} {item.name} {item.battery}</p>
-    </SortableList>
-    <button on:click={() => (showAddModal = true)}>Add device</button>
-    <button on:click={logout}>Logout</button>
+    <div class="dashboard">
+        <h1>Hello, {username}!</h1>
+        <SortableList
+            list={devices}
+            key="id"
+            on:sort={handleSort}
+            let:item
+            let:index
+        >
+            <DeviceItem {item} {index} on:click={handleRemove} />
+        </SortableList>
+        <div>
+            <button on:click={() => (showAddModal = true)}>Add device</button>
+            <button on:click={logout}>Logout</button>
+        </div>
+    </div>
 {/if}
 
 <style>
@@ -240,6 +261,14 @@
         margin-top: 0.5rem;
         margin-bottom: 2rem;
         border: 1px solid #ccc;
+    }
+
+    .dashboard {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 2rem;
     }
 
     .spinner-container {

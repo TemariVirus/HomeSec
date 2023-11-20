@@ -1,10 +1,10 @@
 <script lang="ts">
-    import logo from "$lib/images/HomeSec-logo.png";
+    import logo from "$lib/images/HomeSec-logo.webp";
 </script>
 
 <h1>HomeSec</h1>
 <p>Next-generation home security for all</p>
-<img src={logo} alt="HomeSec logo" height="500" />
+<img src={logo} alt="HomeSec logo" width="500" height="500" />
 
 <style>
     h1 {

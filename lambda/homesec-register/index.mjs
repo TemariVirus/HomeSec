@@ -43,6 +43,10 @@ function parseUser(user) {
     if (username.length > 255) {
         throw new Error("Username cannot be longer than 255 characters");
     }
+    // '+', '/', '#', and '$' are reserved characters in MQTT topics
+    if (/[\+\/\#\$]/g.test(username)) {
+        throw new Error("Username cannot contain +, /, #, or $");
+    }
     if (password.length < 8) {
         throw new Error("Password must be at least 8 characters long");
     }
@@ -68,7 +72,11 @@ async function putUser(user) {
                 username: user.username,
                 password: user.password,
                 salt: user.salt,
-                topicName: randomBytes(18).toString("base64"),
+                // '+' and '/' are reserved characters in MQTT topics
+                topicName: randomBytes(18)
+                    .toString("base64")
+                    .replace(/\+/g, "%")
+                    .replace(/\//g, "_"),
                 isArmed: false,
                 devices: [],
             },
