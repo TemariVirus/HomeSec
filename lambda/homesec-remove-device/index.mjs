@@ -11,26 +11,30 @@ import {
     GetCommand,
     UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
+import {
+    IoTDataPlaneClient,
+    PublishCommand,
+} from "@aws-sdk/client-iot-data-plane";
 
-const client = new DynamoDBClient({});
-const dynamo = DynamoDBDocumentClient.from(client);
+const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const iotData = new IoTDataPlaneClient({});
 
 /**
  * @param {string} connectionId
- * @returns {Promise<string | null>}
+ * @returns {Promise<{username: string, topicName: string} | null>}
  */
-async function getUsername(connectionId) {
+async function getUser(connectionId) {
     const data = await dynamo.send(
         new GetCommand({
             TableName: process.env.CONNECTION_TABLE,
             Key: {
                 id: connectionId,
             },
-            ProjectionExpression: "username",
+            ProjectionExpression: "username, topicName",
         })
     );
 
-    return data.Item?.username ?? null;
+    return data.Item ?? null;
 }
 
 /**
@@ -77,8 +81,8 @@ async function removeDevice(username, deviceId) {
 export async function handler(event) {
     const connectionId = event.requestContext.connectionId;
 
-    const username = await getUsername(connectionId);
-    if (!username) {
+    const user = await getUser(connectionId);
+    if (!user) {
         return {
             statusCode: 401,
             body: "No user found for connection",
@@ -104,12 +108,30 @@ export async function handler(event) {
     }
 
     try {
-        await removeDevice(username, deviceId);
+        await removeDevice(user.username, deviceId);
     } catch (err) {
         console.error(err);
         return {
             statusCode: 500,
             body: "Failed to remove device",
+        };
+    }
+
+    try {
+        await iotData.send(
+            new PublishCommand({
+                topic: `homesec/command/${user.topicName}/${deviceId}`,
+                qos: 1,
+                payload: JSON.stringify({
+                    action: "remove-device",
+                }),
+            })
+        );
+    } catch (err) {
+        console.error(err);
+        return {
+            statusCode: 500,
+            body: "Failed to send command to device",
         };
     }
 

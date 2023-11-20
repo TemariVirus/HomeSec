@@ -7,8 +7,7 @@ import {
     PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 
-const client = new DynamoDBClient({});
-const dynamo = DynamoDBDocumentClient.from(client);
+const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 /**
  * @param {string} token
@@ -27,38 +26,35 @@ function decodeToken(token) {
 
 /**
  * @param {string} username
- * @param {string} sessionId
- * @returns {Promise<boolean>}
+ * @returns {Promise<{sessionId: string, topicName: string} | null>}
  */
-async function verifySession(username, sessionId) {
+async function getUserInfo(username) {
     const result = await dynamo.send(
         new GetCommand({
             TableName: process.env.USER_TABLE,
             Key: {
                 username: username,
             },
-            ProjectionExpression: "sessionId",
+            ProjectionExpression: "sessionId, topicName",
         })
     );
-    if (!result.Item) {
-        return false;
-    }
-
-    return result.Item.sessionId === sessionId;
+    return result.Item ?? null;
 }
 
 /**
  * @param {string} connectionId
  * @param {string} username
+ * @param {string} topicName
  * @returns {Promise<void>}
  */
-async function putConnection(connectionId, username) {
+async function putConnection(connectionId, username, topicName) {
     await dynamo.send(
         new PutCommand({
             TableName: process.env.CONNECTION_TABLE,
             Item: {
                 id: connectionId,
                 username: username,
+                topicName: topicName,
             },
         })
     );
@@ -97,12 +93,10 @@ export async function handler(event) {
         };
     }
 
+    let userInfo;
     try {
-        const sessionExists = await verifySession(
-            payload.username,
-            payload.sessionId
-        );
-        if (!sessionExists) {
+        userInfo = await getUserInfo(payload.username, payload.sessionId);
+        if (userInfo?.sessionId !== payload.sessionId) {
             return {
                 statusCode: 401,
                 body: "Invalid login session",
@@ -118,7 +112,7 @@ export async function handler(event) {
 
     const connectionId = event.requestContext.connectionId;
     try {
-        await putConnection(connectionId, payload.username);
+        await putConnection(connectionId, payload.username, userInfo.topicName);
     } catch (err) {
         console.error(err);
         return {

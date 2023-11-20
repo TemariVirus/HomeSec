@@ -96,7 +96,7 @@
                 isAddingDevice = false;
                 addDeviceRefreshInterval = setInterval(
                     () => getInfo(websocket),
-                    3000
+                    1500
                 );
                 break;
         }

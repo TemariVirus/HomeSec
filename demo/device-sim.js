@@ -189,7 +189,7 @@ async function main(argv) {
     });
 
     // Subscribe to get commands from cloud
-    connection.subscribe(
+    await connection.subscribe(
         commandTopic,
         mqtt.QoS.AtLeastOnce,
         (topic, payload) => {
@@ -203,8 +203,9 @@ async function main(argv) {
                 case "get-info":
                     send(connection, dataTopic, "get-info", deviceInfo);
                     break;
-                case "remove":
+                case "remove-device":
                     rl.close();
+                    // TODO: remove topic name file
                     break;
             }
         }
