@@ -39,10 +39,10 @@ function parseUser(user) {
     if (username.length < 3) {
         throw new Error("Username must have at least 3 characters");
     }
-    if (username.length > 255) {
-        throw new Error("Username cannot be longer than 255 characters");
+    if (username.length > 70) {
+        throw new Error("Username cannot be longer than 70 characters");
     }
-    // '+', '/', '#', and '$' are reserved characters in MQTT topics
+    // '+', '/', '#', and '$' are reserved characters in AWS MQTT topics
     if (/[\+\/\#\$]/g.test(username)) {
         throw new Error("Username cannot contain +, /, #, or $");
     }

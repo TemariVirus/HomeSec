@@ -48,7 +48,7 @@ async function getDevices(username) {
  */
 async function updateDeviceInfo(username, deviceId, info) {
     const devices = await getDevices(username);
-    const index = devices.findIndex((d) => d.id === deviceId);
+    const index = devices.findIndex((d) => d.deviceId === deviceId);
     if (index === -1) {
         return;
     }

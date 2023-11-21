@@ -92,7 +92,7 @@ export async function handler(event) {
 
     const deviceId = randomBytes(9)
         .toString("base64")
-        .replace(/\+/g, "%")
+        .replace(/\+/g, ":")
         .replace(/\//g, "_");
     try {
         await addDevice(username, deviceId, name);

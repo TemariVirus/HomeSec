@@ -1,5 +1,3 @@
-// TODO: send message to mqtt to get devices to send current state
-// another lambda will stream responses to client and client will handle timeout to determine if no battery
 /* Expected event body: {
  *     "action": "get-info",
  * }
@@ -8,8 +6,13 @@
 "use strict";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import {
+    IoTDataPlaneClient,
+    PublishCommand,
+} from "@aws-sdk/client-iot-data-plane";
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const iotData = new IoTDataPlaneClient({});
 
 /**
  * @param {string} connectionId
@@ -71,6 +74,28 @@ export async function handler(event) {
         return {
             statusCode: 500,
             body: "Unable to retrive user info",
+        };
+    }
+
+    try {
+        await Promise.all(
+            userInfo.devices.map((d) =>
+                iotData.send(
+                    new PublishCommand({
+                        topic: `homesec/command/${username}/${d.deviceId}`,
+                        qos: 1,
+                        payload: JSON.stringify({
+                            action: "get-info",
+                        }),
+                    })
+                )
+            )
+        );
+    } catch (err) {
+        console.error(err);
+        return {
+            statusCode: 500,
+            body: "Failed to send command to device",
         };
     }
 

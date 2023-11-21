@@ -166,7 +166,7 @@ export async function handler(event) {
 
     const pending = await removePending(username, deviceId);
 
-    device.id = deviceId;
+    device.deviceId = deviceId;
     device.name = pending.name;
     await addDevice(username, device);
 

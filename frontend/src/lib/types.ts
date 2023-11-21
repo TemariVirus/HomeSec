@@ -1,12 +1,12 @@
 export type CameraDevice = {
-    id: string;
+    deviceId: string;
     name: string;
     battery: number;
     type: "camera";
     streamUrl: string;
 };
 export type ContactShockDevice = {
-    id: string;
+    deviceId: string;
     name: string;
     battery: number;
     type: "contact" | "shock";

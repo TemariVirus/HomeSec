@@ -13,14 +13,18 @@
     import type { Device } from "$lib/types";
     import { PUBLIC_USER_API, PUBLIC_WEBSOCKET_API } from "$env/static/public";
 
+    // NOTE: Set low for demostration purposes, set higher for actual use
+    const DEVICE_TIMEOUT = 5 * 1000; // In milliseconds
+
     let isAddingDevice = false;
     let addDeviceId = "";
     let addDeviceName = "";
     let showAddModal = false;
 
-    let initialised = false;
     let username = "";
     let devices = [] as Device[];
+    let deviceIrresponsive = {} as Record<string, boolean>;
+    let irresponsiveOverride = false;
     let isArmed = false;
 
     let ws: ReturnType<typeof Websocket>;
@@ -46,7 +50,8 @@
 
         return Websocket(`${PUBLIC_WEBSOCKET_API}?token=${token}`, {
             onConnected: (socket) => {
-                getInfo(socket);
+                getInfo(socket); // Get initial info
+                getInfo(socket); // Get updates to check if device is still connected
             },
             onError: async (_) => {
                 logout();
@@ -71,21 +76,32 @@
 
         switch (action) {
             case "get-info":
-                initialised = true;
+                // Initial info
+                if (!username) {
+                    setTimeout(() => {
+                        irresponsiveOverride = true;
+                    }, DEVICE_TIMEOUT);
+                }
+
                 username = data.username;
+                isArmed = data.isArmed;
+
                 devices = sortDevices(data.devices);
                 saveDeviceOrder();
-                isArmed = data.isArmed;
                 break;
             case "update-device":
-                const index = devices.findIndex((d) => d.id === data.deviceId);
+                const index = devices.findIndex(
+                    (d) => d.deviceId === data.deviceId
+                );
                 if (index === -1) {
                     break;
                 }
+
                 devices[index] = {
                     ...devices[index],
                     ...data,
                 };
+                deviceIrresponsive[data.deviceId] = false;
                 break;
             case "add-device":
                 addDeviceId = data;
@@ -95,6 +111,7 @@
                 devices.push(data);
                 devices = devices; // Needed to trigger reactivity
                 saveDeviceOrder();
+                deviceIrresponsive[data.deviceId] = false;
 
                 showAddModal = false;
                 addDeviceId = "";
@@ -137,8 +154,8 @@
 
         // Sort the devices according to the previously saved order
         let newDevices = [] as Device[];
-        for (const id of savedDevices) {
-            const index = devices.findIndex((d) => d.id === id);
+        for (const deviceId of savedDevices) {
+            const index = devices.findIndex((d) => d.deviceId === deviceId);
             if (index === -1) continue;
 
             newDevices.push(devices[index]);
@@ -151,7 +168,10 @@
     }
 
     function saveDeviceOrder() {
-        localStorage.setItem("deviceOrder", devices.map((d) => d.id).join(","));
+        localStorage.setItem(
+            "deviceOrder",
+            devices.map((d) => d.deviceId).join(",")
+        );
     }
 
     function handleSort(e: CustomEvent<Device[]>) {
@@ -161,11 +181,11 @@
 
     function handleRemove(e: CustomEvent<number>) {
         const index = e.detail;
-        const id = devices[index].id;
+        const deviceId = devices[index].deviceId;
         devices.splice(index, 1);
         devices = devices; // Needed to trigger reactivity
         saveDeviceOrder();
-        ws?.send(JSON.stringify({ action: "remove-device", data: id }));
+        ws?.send(JSON.stringify({ action: "remove-device", data: deviceId }));
     }
 
     function logout() {
@@ -190,7 +210,7 @@
     }
 </script>
 
-{#if !initialised}
+{#if !username}
     <LoadingSpinner />
 {:else}
     <Modal bind:show={showAddModal} bg="#222" on:close={cancelAdd}>
@@ -225,12 +245,18 @@
         <h1>Hello, {username}!</h1>
         <SortableList
             list={devices}
-            key="id"
+            key="deviceId"
             on:sort={handleSort}
             let:item
             let:index
         >
-            <DeviceItem {item} {index} on:click={handleRemove} />
+            <DeviceItem
+                {item}
+                {index}
+                irresponsive={deviceIrresponsive[item.deviceId] ??
+                    irresponsiveOverride}
+                on:click={handleRemove}
+            />
         </SortableList>
         <div>
             <button on:click={() => (showAddModal = true)}>Add device</button>

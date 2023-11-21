@@ -7,10 +7,16 @@
 
     export let item: Device;
     export let index: number;
+    export let irresponsive: boolean;
 </script>
 
 <div>
-    <p>{item.id} {item.name} {item.battery}</p>
+    <p>{item.deviceId} {item.name}</p>
+    {#if irresponsive}
+        <p>Device irresponsive</p>
+    {:else}
+        <p>{item.battery}% battery</p>
+    {/if}
     <button class="delete-btn" on:click={() => dispatch("click", index)}>
         <img src={deleteIcon} alt="Delete" />
     </button>

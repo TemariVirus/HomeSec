@@ -137,11 +137,12 @@ async function main(argv) {
     // Send initial device info
     let deviceInfo = generateDeviceInfo(argv.type);
     send(connection, initTopic, deviceInfo);
+    send(connection, dataTopic, deviceInfo);
 
     // Use user input to simulate device updates
     rl.on("line", (line) => {
         const payload = JSON.parse(line);
-        // TODO: update device info with json
+        deviceInfo = { ...deviceInfo, ...payload, deviceId: argv.deviceId };
         send(connection, dataTopic, payload);
     });
 
