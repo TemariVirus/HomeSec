@@ -23,3 +23,8 @@ export function clearAuthToken() {
     authStore.set(null);
     Cookies.remove(AUTH_COOKIE_NAME);
 }
+
+export function logout() {
+    clearAuthToken();
+    window.location.href = "/";
+}

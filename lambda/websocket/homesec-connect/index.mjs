@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
     DynamoDBDocumentClient,
-    GetCommand,
+    UpdateCommand,
     PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 
@@ -26,41 +26,44 @@ function decodeToken(token) {
 
 /**
  * @param {string} username
- * @returns {Promise<{sessionId: string, topicName: string} | null>}
+ * @param {string} sessionId
+ * @param {string} connectionId
  */
-async function getUserInfo(username) {
-    const result = await dynamo.send(
-        new GetCommand({
+async function updateUserInfo(username, sessionId, connectionId) {
+    await dynamo.send(
+        new UpdateCommand({
             TableName: process.env.USER_TABLE,
             Key: {
                 username: username,
             },
-            ProjectionExpression: "sessionId, topicName",
+            UpdateExpression: "SET connectionId = :connectionId",
+            ConditionExpression: "sessionId = :sessionId",
+            ExpressionAttributeValues: {
+                ":connectionId": connectionId,
+                ":sessionId": sessionId,
+            },
         })
     );
-    return result.Item ?? null;
 }
 
 /**
  * @param {string} connectionId
  * @param {string} username
- * @param {string} topicName
- * @returns {Promise<void>}
  */
-async function putConnection(connectionId, username, topicName) {
+async function putConnection(connectionId, username) {
     await dynamo.send(
         new PutCommand({
             TableName: process.env.CONNECTION_TABLE,
             Item: {
                 id: connectionId,
                 username: username,
-                topicName: topicName,
             },
         })
     );
 }
 
 export async function handler(event) {
+    const connectionId = event.requestContext.connectionId;
     const token = event.queryStringParameters?.token;
     if (!token) {
         return {
@@ -93,16 +96,16 @@ export async function handler(event) {
         };
     }
 
-    let userInfo;
     try {
-        userInfo = await getUserInfo(payload.username, payload.sessionId);
-        if (userInfo?.sessionId !== payload.sessionId) {
+        await updateUserInfo(payload.username, payload.sessionId, connectionId);
+    } catch (err) {
+        if (err.__type?.endsWith("#ConditionalCheckFailedException")) {
             return {
                 statusCode: 401,
                 body: "Invalid login session",
             };
         }
-    } catch (err) {
+
         console.error(err);
         return {
             statusCode: 500,
@@ -110,9 +113,8 @@ export async function handler(event) {
         };
     }
 
-    const connectionId = event.requestContext.connectionId;
     try {
-        await putConnection(connectionId, payload.username, userInfo.topicName);
+        await putConnection(connectionId, payload.username);
     } catch (err) {
         console.error(err);
         return {

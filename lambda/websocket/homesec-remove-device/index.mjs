@@ -21,20 +21,20 @@ const iotData = new IoTDataPlaneClient({});
 
 /**
  * @param {string} connectionId
- * @returns {Promise<{username: string, topicName: string} | null>}
+ * @returns {Promise<string | null>}
  */
-async function getUser(connectionId) {
+async function getUsername(connectionId) {
     const data = await dynamo.send(
         new GetCommand({
             TableName: process.env.CONNECTION_TABLE,
             Key: {
                 id: connectionId,
             },
-            ProjectionExpression: "username, topicName",
+            ProjectionExpression: "username",
         })
     );
 
-    return data.Item ?? null;
+    return data.Item?.username ?? null;
 }
 
 /**
@@ -58,7 +58,6 @@ async function getDevices(username) {
 /**
  * @param {string} username
  * @param {string} deviceId
- * @returns {Promise<void>}
  */
 async function removeDevice(username, deviceId) {
     const devices = await getDevices(username);
@@ -81,8 +80,8 @@ async function removeDevice(username, deviceId) {
 export async function handler(event) {
     const connectionId = event.requestContext.connectionId;
 
-    const user = await getUser(connectionId);
-    if (!user) {
+    const username = await getUsername(connectionId);
+    if (!username) {
         return {
             statusCode: 401,
             body: "No user found for connection",
@@ -108,7 +107,7 @@ export async function handler(event) {
     }
 
     try {
-        await removeDevice(user.username, deviceId);
+        await removeDevice(username, deviceId);
     } catch (err) {
         console.error(err);
         return {
@@ -120,7 +119,7 @@ export async function handler(event) {
     try {
         await iotData.send(
             new PublishCommand({
-                topic: `homesec/command/${user.topicName}/${deviceId}`,
+                topic: `homesec/command/${username}/${deviceId}`,
                 qos: 1,
                 payload: JSON.stringify({
                     action: "remove-device",

@@ -22,7 +22,6 @@ function decodeToken(token) {
 
 /**
  * @param {string} username
- * @returns {Promise<void>}
  */
 async function deleteSession(username) {
     await dynamo.send(

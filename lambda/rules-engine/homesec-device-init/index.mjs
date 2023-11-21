@@ -11,15 +11,16 @@ import {
     DynamoDBDocumentClient,
     GetCommand,
     UpdateCommand,
-    DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
-    IoTDataPlaneClient,
-    PublishCommand,
-} from "@aws-sdk/client-iot-data-plane";
+    ApiGatewayManagementApiClient,
+    PostToConnectionCommand,
+} from "@aws-sdk/client-apigatewaymanagementapi";
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-const iotData = new IoTDataPlaneClient({});
+const apiGateway = new ApiGatewayManagementApiClient({
+    endpoint: process.env.WS_ENDPOINT,
+});
 
 /**
  * @param {object} data
@@ -96,27 +97,35 @@ function parseDevice(data) {
     return device;
 }
 
-async function deletePending(username, deviceId) {
-    const key = `${username}/${deviceId}`;
+/**
+ * @param {string} username
+ * @param {string} deviceId
+ * @returns {Promise<{ deviceId: string, name: string } | null>}
+ */
+async function removePending(username, deviceId) {
     const res = await dynamo.send(
-        new DeleteCommand({
-            TableName: process.env.DEVICE_TABLE,
+        new UpdateCommand({
+            TableName: process.env.USER_TABLE,
             Key: {
-                key: key,
+                username: username,
+            },
+            UpdateExpression: "REMOVE pending",
+            ConditionExpression: "pending.deviceId = :deviceId",
+            ExpressionAttributeValues: {
+                ":deviceId": deviceId,
             },
             ReturnValues: "ALL_OLD",
         })
     );
-    return res.Attributes;
+    return res.Attributes?.pending ?? null;
 }
 
 /**
  * @param {string} username
  * @param {object} device
- * @returns {Promise<void>}
  */
 async function addDevice(username, device) {
-    const res = await dynamo.send(
+    await dynamo.send(
         new UpdateCommand({
             TableName: process.env.USER_TABLE,
             Key: {
@@ -126,10 +135,25 @@ async function addDevice(username, device) {
             ExpressionAttributeValues: {
                 ":device": [device],
             },
-            ReturnValues: "ALL_OLD",
         })
     );
-    return res.Attributes?.topicName;
+}
+
+/**
+ * @param {string} username
+ * @returns {Promise<string | null>}
+ */
+async function getConnectionId(username) {
+    const data = await dynamo.send(
+        new GetCommand({
+            TableName: process.env.USER_TABLE,
+            Key: {
+                username: username,
+            },
+            ProjectionExpression: "connectionId",
+        })
+    );
+    return data.Item?.connectionId ?? null;
 }
 
 export async function handler(event) {
@@ -140,21 +164,22 @@ export async function handler(event) {
         return;
     }
 
-    const old = await deletePending(username, deviceId);
-    if (!old) {
-        return;
-    }
+    const pending = await removePending(username, deviceId);
 
     device.id = deviceId;
-    device.name = old.name;
-    const topicName = await addDevice(username, device);
-    await iotData.send(
-        new PublishCommand({
-            topic: `homesec/init/${username}/${deviceId}`,
-            qos: 1,
-            payload: JSON.stringify({
-                action: "user-topic",
-                data: topicName,
+    device.name = pending.name;
+    await addDevice(username, device);
+
+    const connectionId = await getConnectionId(username);
+    if (!connectionId) {
+        return;
+    }
+    await apiGateway.send(
+        new PostToConnectionCommand({
+            ConnectionId: connectionId,
+            Data: JSON.stringify({
+                action: "add-device-complete",
+                data: device,
             }),
         })
     );

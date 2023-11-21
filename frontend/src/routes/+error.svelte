@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { page } from "$app/stores";
-    import { clearAuthToken, getAuthToken } from "$lib/auth";
+    import { getAuthToken, logout } from "$lib/auth";
 
     import Error from "$lib/components/Error.svelte";
     import { onMount } from "svelte";
@@ -9,8 +9,7 @@
     onMount(() => {
         switch ($page.status) {
             case 401:
-                clearAuthToken();
-                goto("/");
+                logout();
                 break;
             case 404:
                 if (getAuthToken()) {

@@ -16,7 +16,6 @@
     let isAddingDevice = false;
     let addDeviceId = "";
     let addDeviceName = "";
-    let addDeviceRefreshInterval: ReturnType<typeof setInterval>;
     let showAddModal = false;
 
     let initialised = false;
@@ -29,8 +28,7 @@
     onMount(() => {
         const temp = connect();
         if (!temp) {
-            clearAuthToken();
-            goto("/");
+            logout();
             return;
         }
 
@@ -39,21 +37,19 @@
         ws.data.subscribe(handleData);
     });
 
-    function connect(): ReturnType<typeof Websocket> | undefined {
+    function connect(): ReturnType<typeof Websocket> | null {
         const token = getAuthToken();
 
         if (!token) {
-            clearAuthToken();
-            return;
+            return null;
         }
 
         return Websocket(`${PUBLIC_WEBSOCKET_API}?token=${token}`, {
             onConnected: (socket) => {
                 getInfo(socket);
             },
-            onError: (_) => {
-                clearAuthToken();
-                goto("/");
+            onError: async (_) => {
+                logout();
             },
         });
     }
@@ -80,24 +76,29 @@
                 devices = sortDevices(data.devices);
                 saveDeviceOrder();
                 isArmed = data.isArmed;
-
-                if (addDeviceId !== "") {
-                    const added = devices.some((d) => d.id === addDeviceId);
-                    if (added) {
-                        addDeviceId = "";
-                        addDeviceName = "";
-                        clearInterval(addDeviceRefreshInterval);
-                        showAddModal = false;
-                    }
+                break;
+            case "update-device":
+                const index = devices.findIndex((d) => d.id === data.deviceId);
+                if (index === -1) {
+                    break;
                 }
+                devices[index] = {
+                    ...devices[index],
+                    ...data,
+                };
                 break;
             case "add-device":
                 addDeviceId = data;
                 isAddingDevice = false;
-                addDeviceRefreshInterval = setInterval(
-                    () => getInfo(websocket),
-                    1500
-                );
+                break;
+            case "add-device-complete":
+                devices.push(data);
+                devices = devices; // Needed to trigger reactivity
+                saveDeviceOrder();
+
+                showAddModal = false;
+                addDeviceId = "";
+                addDeviceName = "";
                 break;
         }
     }

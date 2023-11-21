@@ -1,15 +1,16 @@
 /* Expected event body: {
- *     "action": "cancel-add-device",
+ *     "action": "add-device",
  *     "data": string,
  * }
  */
 
 "use strict";
+import { randomBytes } from "crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
     DynamoDBDocumentClient,
     GetCommand,
-    DeleteCommand,
+    UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -35,14 +36,21 @@ async function getUsername(connectionId) {
 /**
  * @param {string} username
  * @param {string} deviceId
- * @returns {Promise<void>}
+ * @param {string} name
  */
-async function removeDevice(username, deviceId) {
+async function addDevice(username, deviceId, name) {
     await dynamo.send(
-        new DeleteCommand({
-            TableName: process.env.DEVICE_TABLE,
+        new UpdateCommand({
+            TableName: process.env.USER_TABLE,
             Key: {
-                key: `${username}/${deviceId}`,
+                username: username,
+            },
+            UpdateExpression: "SET pending = :pending",
+            ExpressionAttributeValues: {
+                ":pending": {
+                    deviceId: deviceId,
+                    name: name,
+                },
             },
         })
     );
@@ -59,11 +67,17 @@ export async function handler(event) {
         };
     }
 
-    const deviceId = body?.data;
-    if (typeof deviceId !== "string" || deviceId.length === 0) {
+    const name = body?.data;
+    if (typeof name !== "string" || name.length === 0) {
         return {
             statusCode: 400,
             body: "Invalid request body",
+        };
+    }
+    if (name.length > 255) {
+        return {
+            statusCode: 400,
+            body: "Device name cannot be longer than 255 characters",
         };
     }
 
@@ -76,8 +90,12 @@ export async function handler(event) {
         };
     }
 
+    const deviceId = randomBytes(9)
+        .toString("base64")
+        .replace(/\+/g, "%")
+        .replace(/\//g, "_");
     try {
-        await removeDevice(username, deviceId);
+        await addDevice(username, deviceId, name);
     } catch (err) {
         console.error(err);
         return {
@@ -88,5 +106,6 @@ export async function handler(event) {
 
     return {
         statusCode: 200,
+        body: JSON.stringify({ action: body.action, data: deviceId }),
     };
 }

@@ -1,7 +1,6 @@
 "use strict";
 const { iot, mqtt } = require("aws-iot-device-sdk-v2");
 const { randomBytes } = require("crypto");
-const { existsSync, readFileSync, writeFile } = require("fs");
 const readline = require("readline");
 const yargs = require("yargs");
 
@@ -46,6 +45,10 @@ yargs
     )
     .parse();
 
+/**
+ * @param {yargs.Arguments} argv
+ * @returns {mqtt.MqttClientConnection}
+ */
 function buildConnection(argv) {
     let config_builder =
         iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(
@@ -63,57 +66,22 @@ function buildConnection(argv) {
     return client.new_connection(config);
 }
 
-async function init(connection, initTopic, username, deviceId, deviceInfo) {
-    const userTopicPath = `devices/${username}/${deviceId}`;
-
-    if (existsSync(userTopicPath)) {
-        const topicName = readFileSync(userTopicPath);
-        // const topicName = decoder.decode(readFileSync(userTopicPath));
-        console.log(`Using topic name: ${topicName}`);
-        return {
-            dataTopic: `homesec/data/${topicName}/${deviceId}`,
-            commandTopic: `homesec/command/${topicName}/${deviceId}`,
-        };
-    }
-
-    const topics = new Promise((resolve) => {
-        // Subscribe to get user's topic name
-        connection.subscribe(
-            initTopic,
-            mqtt.QoS.AtLeastOnce,
-            (topic, payload) => {
-                const msg = decoder.decode(payload);
-                const json = JSON.parse(msg);
-                console.log(
-                    `Received message from ${topic}: ${JSON.stringify(json)}`
-                );
-
-                if (json.action !== "user-topic") {
-                    return;
-                }
-                connection.unsubscribe(initTopic);
-
-                const topicName = json.data;
-                // TODO: make this work
-                // Save topic name to file
-                writeFile(userTopicPath, topicName, null, () => {});
-
-                resolve({
-                    dataTopic: `homesec/data/${topicName}/${deviceId}`,
-                    commandTopic: `homesec/command/${topicName}/${deviceId}`,
-                    deviceInfo: deviceInfo,
-                });
-            }
-        );
+/**
+ * @param {mqtt.MqttClientConnection} connection
+ * @param {string} topic
+ * @param {any} payload
+ */
+function send(connection, topic, payload) {
+    const msg = JSON.stringify(payload);
+    connection.publish(topic, msg, mqtt.QoS.AtLeastOnce).then(() => {
+        console.log(`Published to ${topic}: ${msg}`);
     });
-
-    // Send data from device
-    send(connection, initTopic, "init", deviceInfo);
-
-    return await topics;
 }
 
-// Randomly generates device info
+/**
+ * @param {string} type
+ * @returns {any}
+ */
 function generateDeviceInfo(type) {
     let info;
     switch (type) {
@@ -144,21 +112,16 @@ function generateDeviceInfo(type) {
     return info;
 }
 
-function send(connection, topic, action, data) {
-    const msg = JSON.stringify({
-        action: action,
-        data: data,
-    });
-    connection.publish(topic, msg, mqtt.QoS.AtLeastOnce).then(() => {
-        console.log(`Published to ${topic}: ${msg}`);
-    });
-}
-
+/**
+ * @param {yargs.Arguments} argv
+ */
 async function main(argv) {
     argv.deviceId = argv["device-id"];
     argv["device-id"] = undefined;
 
     const initTopic = `homesec/init/${argv.username}/${argv.deviceId}`;
+    const dataTopic = `homesec/data/${argv.username}/${argv.deviceId}`;
+    const commandTopic = `homesec/command/${argv.username}/${argv.deviceId}`;
     const connection = buildConnection(argv);
 
     await connection.connect();
@@ -171,21 +134,15 @@ async function main(argv) {
         process.exit(0);
     });
 
-    // Get topics
+    // Send initial device info
     let deviceInfo = generateDeviceInfo(argv.type);
-    const { dataTopic, commandTopic } = await init(
-        connection,
-        initTopic,
-        argv.username,
-        argv.deviceId,
-        deviceInfo
-    );
+    send(connection, initTopic, deviceInfo);
 
     // Use user input to simulate device updates
     rl.on("line", (line) => {
-        const json = JSON.parse(line);
+        const payload = JSON.parse(line);
         // TODO: update device info with json
-        send(connection, dataTopic, "update", json);
+        send(connection, dataTopic, payload);
     });
 
     // Subscribe to get commands from cloud
@@ -195,17 +152,14 @@ async function main(argv) {
         (topic, payload) => {
             const msg = decoder.decode(payload);
             const json = JSON.parse(msg);
-            console.log(
-                `Received message from ${topic}: ${JSON.stringify(json)}`
-            );
+            console.log(`Received from ${topic}: ${JSON.stringify(json)}`);
 
             switch (json.action) {
                 case "get-info":
-                    send(connection, dataTopic, "get-info", deviceInfo);
+                    send(connection, dataTopic, deviceInfo);
                     break;
                 case "remove-device":
                     rl.close();
-                    // TODO: remove topic name file
                     break;
             }
         }

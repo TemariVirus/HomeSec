@@ -1,16 +1,15 @@
 /* Expected event body: {
- *     "action": "add-device",
+ *     "action": "cancel-add-device",
  *     "data": string,
  * }
  */
 
 "use strict";
-import { randomBytes } from "crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
     DynamoDBDocumentClient,
     GetCommand,
-    PutCommand,
+    UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -36,16 +35,18 @@ async function getUsername(connectionId) {
 /**
  * @param {string} username
  * @param {string} deviceId
- * @param {string} name
- * @returns {Promise<void>}
  */
-async function addDevice(username, deviceId, name) {
+async function removePending(username, deviceId) {
     await dynamo.send(
-        new PutCommand({
-            TableName: process.env.DEVICE_TABLE,
-            Item: {
-                key: `${username}/${deviceId}`,
-                name: name,
+        new UpdateCommand({
+            TableName: process.env.USER_TABLE,
+            Key: {
+                username: username,
+            },
+            UpdateExpression: "REMOVE pending",
+            ConditionExpression: "pending.deviceId = :deviceId",
+            ExpressionAttributeValues: {
+                ":deviceId": deviceId,
             },
         })
     );
@@ -62,8 +63,8 @@ export async function handler(event) {
         };
     }
 
-    const name = body?.data;
-    if (typeof name !== "string" || name.length === 0) {
+    const deviceId = body?.data;
+    if (typeof deviceId !== "string" || deviceId.length === 0) {
         return {
             statusCode: 400,
             body: "Invalid request body",
@@ -79,22 +80,24 @@ export async function handler(event) {
         };
     }
 
-    const deviceId = randomBytes(9)
-        .toString("base64")
-        .replace(/\+/g, "%")
-        .replace(/\//g, "_");
     try {
-        await addDevice(username, deviceId, name);
+        await removePending(username, deviceId);
     } catch (err) {
+        // Device is considered already removed if the condition check failed
+        if (err.__type?.endsWith("#ConditionalCheckFailedException")) {
+            return {
+                statusCode: 200,
+            };
+        }
+
         console.error(err);
         return {
             statusCode: 500,
-            body: "Failed to add device",
+            body: "Failed to remove pending device",
         };
     }
 
     return {
         statusCode: 200,
-        body: JSON.stringify({ action: body.action, data: deviceId }),
     };
 }

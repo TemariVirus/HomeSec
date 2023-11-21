@@ -1,0 +1,20 @@
+version: 1
+applications:
+  - frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            - echo "PUBLIC_USER_API=$USER_API" >> .env
+            - echo "PUBLIC_WEBSOCKET_API=$WEBSOCKET_API" >> .env
+            - npm run build
+      artifacts:
+        baseDirectory: /build
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+    appRoot: frontend

@@ -1,11 +1,15 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import About from "$lib/components/About.svelte";
-    import { setAuthToken } from "$lib/auth";
+    import { getAuthToken, setAuthToken } from "$lib/auth";
     import { PUBLIC_USER_API } from "$env/static/public";
 
     let username = "";
     let password = "";
+
+    if (getAuthToken()) {
+        goto("/dashboard");
+    }
 
     function handleLogin(): void {
         fetch(`${PUBLIC_USER_API}/login`, {

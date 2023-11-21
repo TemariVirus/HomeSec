@@ -60,7 +60,6 @@ function parseUser(user) {
 
 /**
  * @param {{username: string, password: string, salt: string}} user
- * @returns {Promise<void>}
  */
 async function putUser(user) {
     await dynamo.send(
@@ -71,11 +70,6 @@ async function putUser(user) {
                 username: user.username,
                 password: user.password,
                 salt: user.salt,
-                // '+' and '/' are reserved characters in MQTT topics
-                topicName: randomBytes(18)
-                    .toString("base64")
-                    .replace(/\+/g, "%")
-                    .replace(/\//g, "_"),
                 isArmed: false,
                 devices: [],
             },
