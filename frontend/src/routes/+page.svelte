@@ -6,6 +6,7 @@
 
     let username = "";
     let password = "";
+    let login = true;
 
     if (getAuthToken()) {
         goto("/dashboard");
@@ -34,6 +35,47 @@
             })
             .catch((err) => alert(err));
     }
+
+    function handleRegister(): void {
+        fetch(PUBLIC_USER_API, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password,
+            }),
+        })
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+            })
+            .then(() =>
+                fetch(`${PUBLIC_USER_API}/login`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                    }),
+                })
+            )
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+                return res.text();
+            })
+            .then((res) => {
+                setAuthToken(res);
+                goto("/dashboard");
+            })
+            .catch((err) => alert(err));
+    }
 </script>
 
 <div class="container">
@@ -41,31 +83,61 @@
         <About />
     </div>
     <div class="right">
-        <h1>Log in</h1>
-        <form on:submit|preventDefault={handleLogin}>
-            <label for="username">Username</label>
-            <input
-                bind:value={username}
-                class="rounded-full"
-                name="username"
-                type="username"
-                placeholder="Username"
-            />
-            <br />
-            <label for="password">Password</label>
-            <input
-                bind:value={password}
-                class="rounded-full"
-                name="password"
-                type="password"
-                placeholder="Password"
-            />
-            <p class="small-text redirect-text">
-                No account? <a href="/register">Register</a>
-            </p>
-            <br />
-            <button class="rounded-full" type="submit">Log in</button>
-        </form>
+        {#if login}
+            <h1>Log in</h1>
+            <form on:submit|preventDefault={handleLogin}>
+                <label for="username">Username</label>
+                <input
+                    bind:value={username}
+                    class="rounded-full"
+                    name="username"
+                    type="username"
+                    placeholder="Username"
+                />
+                <br />
+                <label for="password">Password</label>
+                <input
+                    bind:value={password}
+                    class="rounded-full"
+                    name="password"
+                    type="password"
+                    placeholder="Password"
+                />
+                <p class="small-text redirect-text">
+                    No account? <a on:click={() => (login = false)}>Register</a>
+                </p>
+                <br />
+                <button class="rounded-full" type="submit">Log in</button>
+            </form>
+        {:else}
+            <h1>Register</h1>
+            <form on:submit|preventDefault={handleRegister}>
+                <label for="username">Username</label>
+                <input
+                    bind:value={username}
+                    class="rounded-full"
+                    name="username"
+                    type="username"
+                    placeholder="Username"
+                />
+                <br />
+                <label for="password">Password</label>
+                <input
+                    bind:value={password}
+                    class="rounded-full"
+                    name="password"
+                    type="password"
+                    placeholder="Password"
+                />
+                <p class="small-text redirect-text">
+                    Have an account? <a on:click={() => (login = true)}>
+                        Log in
+                    </a>
+                </p>
+                <br />
+                <button class="rounded-full" type="submit">Register</button>
+            </form>
+        {/if}
     </div>
 </div>
 
@@ -103,11 +175,15 @@
     }
 
     .container {
+        position: absolute;
         display: flex;
         justify-content: center;
         align-items: center;
         flex-direction: row;
+        top: 0;
+        left: 0;
         height: 100vh;
+        width: 100vw;
     }
 
     .left,

@@ -10,25 +10,53 @@
     export let irresponsive: boolean;
 </script>
 
-<div>
-    <p>{item.deviceId} {item.name}</p>
+<section>
+    <b>{item.name} ({item.type})</b>
+    {#if item.type === "camera"}
+        <p>Live feed: <a href={item.streamUrl}>{item.streamUrl}</a></p>
+    {:else if item.type === "contact"}
+        <p>Open: {item.isOpen ? "Yes" : "No"}</p>
+    {:else if item.type === "shock"}
+        <p>Open: {item.isOpen ? "Yes" : "No"}</p>
+    {/if}
     {#if irresponsive}
         <p>Device irresponsive</p>
     {:else}
-        <p>{item.battery}% battery</p>
+        <p>{Math.round(item.battery * 10) / 10}% battery</p>
     {/if}
     <button class="delete-btn" on:click={() => dispatch("click", index)}>
         <img src={deleteIcon} alt="Delete" />
     </button>
-</div>
+</section>
 
 <style>
+    section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 1rem;
+        margin: 1rem;
+    }
+
+    p {
+        margin: 0.5rem 0;
+    }
+
+    b {
+        margin: 0.5rem 0;
+        font-size: x-large;
+    }
+
     .delete-btn {
-        width: 30px;
-        height: 30px;
+        width: 25px;
+        height: 25px;
         background: none;
         border: none;
         padding: 0;
-        margin: 0;
+        margin: 0.5rem;
+        margin-top: 1rem;
+        align-self: flex-end;
     }
 </style>
