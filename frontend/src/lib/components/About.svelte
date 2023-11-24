@@ -4,11 +4,11 @@
 
 <h1>HomeSec</h1>
 <p>Next-generation home security for all</p>
-<img src={logo} alt="HomeSec logo" width="500" height="500" />
+<img src={logo} alt="HomeSec logo" width="450" height="450" />
 
 <style>
     h1 {
-        font-size: 6rem;
+        font-size: 5rem;
         margin: 0rem;
     }
 

@@ -175,13 +175,10 @@
     }
 
     .container {
-        position: absolute;
         display: flex;
         justify-content: center;
         align-items: center;
         flex-direction: row;
-        top: 0;
-        left: 0;
         height: 100vh;
         width: 100vw;
     }
