@@ -10,18 +10,22 @@
     export let irresponsive: boolean;
 </script>
 
-<section>
+<section
+    style="{irresponsive || item.battery < 5
+        ? 'background-color: firebrick'
+        : ''};"
+>
     <b>{item.name} ({item.type})</b>
-    {#if item.type === "camera"}
-        <p>Live feed: <a href={item.streamUrl}>{item.streamUrl}</a></p>
-    {:else if item.type === "contact"}
-        <p>Open: {item.isOpen ? "Yes" : "No"}</p>
-    {:else if item.type === "shock"}
-        <p>Open: {item.isOpen ? "Yes" : "No"}</p>
-    {/if}
     {#if irresponsive}
         <p>Device irresponsive</p>
     {:else}
+        {#if item.type === "camera"}
+            <p>Live feed: <a href={item.streamUrl}>{item.streamUrl}</a></p>
+        {:else if item.type === "contact"}
+            <p>Open: {item.isOpen ? "Yes" : "No"}</p>
+        {:else if item.type === "shock"}
+            <p>Open: {item.isOpen ? "Yes" : "No"}</p>
+        {/if}
         <p>{Math.round(item.battery * 10) / 10}% battery</p>
     {/if}
     <button class="delete-btn" on:click={() => dispatch("click", index)}>

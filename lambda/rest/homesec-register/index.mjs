@@ -1,4 +1,3 @@
-// TODO: get user phone number as well
 "use strict";
 import { createHmac, randomBytes } from "crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -31,12 +30,13 @@ function hash(password, salt) {
 
 /**
  * @param {string} user
- * @returns {{username: string, password: string, salt: string}}
+ * @returns {{username: string, password: string, salt: string, phoneNo: string}}
  */
 function parseUser(user) {
     user = JSON.parse(user);
     const username = user.username.trim();
     const password = user.password.trim();
+    const phoneNo = user.phoneNo.trim();
     if (username.length < 3) {
         throw new Error("Username must have at least 3 characters");
     }
@@ -50,17 +50,21 @@ function parseUser(user) {
     if (password.length < 8) {
         throw new Error("Password must be at least 8 characters long");
     }
+    if (!/^\+?[1-9]\d{1,14}$/.test(phoneNo)) {
+        throw new Error("Invalid phone number");
+    }
 
     const salt = generateSalt(SALT_BIT_SIZE / 4);
     return {
         username: username,
         password: hash(password, salt),
         salt: salt,
+        phoneNo: phoneNo,
     };
 }
 
 /**
- * @param {{username: string, password: string, salt: string}} user
+ * @param {{username: string, password: string, salt: string, phoneNo: string}} user
  */
 async function putUser(user) {
     await dynamo.send(
@@ -71,6 +75,7 @@ async function putUser(user) {
                 username: user.username,
                 password: user.password,
                 salt: user.salt,
+                phoneNo: user.phoneNo,
                 isArmed: false,
                 devices: [],
             },

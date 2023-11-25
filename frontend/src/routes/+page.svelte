@@ -6,6 +6,7 @@
 
     let username = "";
     let password = "";
+    let phoneNo = "";
     let login = true;
 
     if (getAuthToken()) {
@@ -45,6 +46,7 @@
             body: JSON.stringify({
                 username: username,
                 password: password,
+                phoneNo: phoneNo,
             }),
         })
             .then(async (res) => {
@@ -129,6 +131,15 @@
                     type="password"
                     placeholder="Password"
                 />
+                <br />
+                <label for="phoneNo">Phone Number</label>
+                <input
+                    bind:value={phoneNo}
+                    class="rounded-full"
+                    name="phoneNo"
+                    type="tel"
+                    placeholder="Phone Number"
+                />
                 <p class="small-text redirect-text">
                     Have an account? <a on:click={() => (login = true)}>
                         Log in
@@ -159,8 +170,7 @@
         align-self: flex-start;
     }
 
-    input[type="username"],
-    input[type="password"] {
+    input {
         width: 100%;
         font-size: 1.5rem;
         padding: 0.5rem 0.75rem;
