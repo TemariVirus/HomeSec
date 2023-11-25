@@ -1,4 +1,5 @@
-/* Expected event: {
+/* SELECT * AS data, topic(3) as username, topic(4) AS deviceId FROM 'homesec/init/+/+'
+ * Expected event: {
  *     "data": object,
  *     "deviceId": string,
  *     "username": string,

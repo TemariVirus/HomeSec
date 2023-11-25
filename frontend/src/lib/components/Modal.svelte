@@ -13,6 +13,8 @@
     export let bg: string = "gray";
 
     const handleKeydown = (e: KeyboardEvent) => {
+        if (!show) return;
+
         if (e.key === "Escape") {
             close();
             return;

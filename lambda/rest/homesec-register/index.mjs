@@ -1,3 +1,4 @@
+// TODO: get user phone number as well
 "use strict";
 import { createHmac, randomBytes } from "crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";

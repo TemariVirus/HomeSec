@@ -188,6 +188,35 @@
         ws?.send(JSON.stringify({ action: "remove-device", data: deviceId }));
     }
 
+    function handleArmToggle(event: MouseEvent) {
+        const target = event.target as HTMLButtonElement;
+        const newArmed =
+            target?.getAttribute("aria-checked") === "true" ? false : true;
+
+        if (newArmed) {
+            const sensorsOpen = devices.some((d) => {
+                if (d.type !== "contact" && d.type !== "shock") {
+                    return false;
+                }
+                const isIrresponsive =
+                    deviceIrresponsive[d.deviceId] ?? irresponsiveOverride;
+                return !isIrresponsive && d.isOpen;
+            });
+            if (sensorsOpen) {
+                alert("Cannot arm while a device is open");
+                return;
+            }
+        }
+
+        isArmed = newArmed;
+        ws?.send(
+            JSON.stringify({
+                action: "set-armed",
+                data: isArmed,
+            })
+        );
+    }
+
     function logout() {
         const token = getAuthToken();
         clearAuthToken();
@@ -259,6 +288,15 @@
             />
         </SortableList>
         <div>
+            <div class="slider">
+                <span>Armed</span>
+                <button
+                    role="switch"
+                    aria-checked={isArmed}
+                    on:click={handleArmToggle}
+                >
+                </button>
+            </div>
             <button on:click={() => (showAddModal = true)}>Add device</button>
             <button on:click={logout}>Logout</button>
         </div>
@@ -266,6 +304,10 @@
 {/if}
 
 <style>
+    :root {
+        --accent-color: CornflowerBlue;
+    }
+
     form {
         display: flex;
         flex-direction: column;
@@ -319,5 +361,56 @@
     .id-container h1 {
         margin-top: 0;
         font-size: 56px;
+    }
+
+    .slider {
+        display: flex;
+        align-items: center;
+    }
+
+    .slider button {
+        width: 3em;
+        height: 1.6em;
+        position: relative;
+        margin: 0 0 0 0.5em;
+        background: #ccc;
+        border: none;
+    }
+
+    .slider button::before {
+        content: "";
+        position: absolute;
+        width: 1.3em;
+        height: 1.3em;
+        background: #fff;
+        top: 0.13em;
+        right: 1.5em;
+        transition: transform 0.3s;
+    }
+
+    .slider button[aria-checked="true"] {
+        background-color: var(--accent-color);
+    }
+
+    .slider button[aria-checked="true"]::before {
+        transform: translateX(1.3em);
+        transition: transform 0.3s;
+    }
+
+    .slider button:focus {
+        box-shadow: 0 0px 0px 1px var(--accent-color);
+    }
+
+    .slider button {
+        border-radius: 1.5em;
+    }
+
+    .slider button::before {
+        border-radius: 100%;
+    }
+
+    .slider button:focus {
+        box-shadow: 0 0px 8px var(--accent-color);
+        border-radius: 1.5em;
     }
 </style>

@@ -1,4 +1,5 @@
-/* Expected event: {
+/* SQL statement: SELECT * AS data, topic(3) AS username, topic(4) AS deviceId FROM 'homesec/data/+/+'
+ * Expected event: {
  *     "data": object,
  *     "deviceId": string,
  *     "username": string,
@@ -44,7 +45,11 @@ async function getDevices(username) {
  * @param {string} username
  * @param {string} deviceId
  * @param {object} info
- * @returns {Promise<string | null>}
+ * @returns {Promise<{
+ *     connectionId: string | undefined,
+ *     device: object | undefined,
+ *     isArmed: boolean | undefined,
+ * }>}
  */
 async function updateDeviceInfo(username, deviceId, info) {
     const devices = await getDevices(username);
@@ -70,7 +75,11 @@ async function updateDeviceInfo(username, deviceId, info) {
             ReturnValues: "ALL_NEW",
         })
     );
-    return res.Attributes?.connectionId ?? null;
+    return {
+        connectionId: res.Attributes?.connectionId,
+        device: device,
+        isArmed: res.Attributes?.isArmed,
+    };
 }
 
 export async function handler(event) {
@@ -81,7 +90,11 @@ export async function handler(event) {
         return;
     }
 
-    const connectionId = await updateDeviceInfo(username, deviceId, data);
+    const { connectionId, device, isArmed } = await updateDeviceInfo(
+        username,
+        deviceId,
+        data
+    );
     if (!connectionId) {
         return;
     }
@@ -98,5 +111,10 @@ export async function handler(event) {
             }),
         })
     );
+
+    if (isArmed && device.isOpen) {
+        // TODO: Send notification to user
+    }
+
     return;
 }
