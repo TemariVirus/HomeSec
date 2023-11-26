@@ -17,11 +17,13 @@ import {
     ApiGatewayManagementApiClient,
     PostToConnectionCommand,
 } from "@aws-sdk/client-apigatewaymanagementapi";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const apiGateway = new ApiGatewayManagementApiClient({
     endpoint: process.env.WS_ENDPOINT,
 });
+const sns = new SNSClient({});
 
 /**
  * @param {string} username
@@ -47,6 +49,7 @@ async function getDevices(username) {
  * @param {object} info
  * @returns {Promise<{
  *     connectionId: string | undefined,
+ *     phoneNo: string | undefined,
  *     device: object | undefined,
  *     isArmed: boolean | undefined,
  * }>}
@@ -77,9 +80,43 @@ async function updateDeviceInfo(username, deviceId, info) {
     );
     return {
         connectionId: res.Attributes?.connectionId,
+        phoneNo: res.Attributes?.phoneNo,
         device: device,
         isArmed: res.Attributes?.isArmed,
     };
+}
+
+/**
+ * @param {string} connectionId
+ * @param {string} deviceId
+ * @param {object} info
+ */
+async function updateDashboard(connectionId, deviceId, info) {
+    await apiGateway.send(
+        new PostToConnectionCommand({
+            ConnectionId: connectionId,
+            Data: JSON.stringify({
+                action: "update-device",
+                data: {
+                    ...info,
+                    deviceId: deviceId,
+                },
+            }),
+        })
+    );
+}
+
+/**
+ * @param {string} phoneNo
+ * @param {string} message
+ */
+async function notifyUser(phoneNo, message) {
+    await sns.send(
+        new PublishCommand({
+            PhoneNumber: phoneNo,
+            Message: message,
+        })
+    );
 }
 
 export async function handler(event) {
@@ -90,31 +127,20 @@ export async function handler(event) {
         return;
     }
 
-    const { connectionId, device, isArmed } = await updateDeviceInfo(
+    const { connectionId, phoneNo, device, isArmed } = await updateDeviceInfo(
         username,
         deviceId,
         data
     );
-    if (!connectionId) {
-        return;
-    }
-
-    await apiGateway.send(
-        new PostToConnectionCommand({
-            ConnectionId: connectionId,
-            Data: JSON.stringify({
-                action: "update-device",
-                data: {
-                    ...data,
-                    deviceId: deviceId,
-                },
-            }),
-        })
-    );
 
     if (isArmed && device.isOpen) {
-        // TODO: Send notification to user
+        await notifyUser(
+            phoneNo,
+            `Home intruder detected by ${device.name} (${device.type})!`
+        );
     }
 
-    return;
+    if (connectionId) {
+        await updateDashboard(connectionId, deviceId, data);
+    }
 }

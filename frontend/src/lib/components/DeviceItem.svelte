@@ -3,6 +3,7 @@
     import deleteIcon from "$lib/images/delete.webp";
     import type { Device } from "$lib/types";
 
+    const LOW_BATTERY_THRESHOLD = 5;
     const dispatch = createEventDispatcher();
 
     export let item: Device;
@@ -11,9 +12,9 @@
 </script>
 
 <section
-    style="{irresponsive || item.battery < 5
-        ? 'background-color: firebrick'
-        : ''};"
+    style={irresponsive || item.battery < LOW_BATTERY_THRESHOLD
+        ? "background-color: firebrick;"
+        : ""}
 >
     <b>{item.name} ({item.type})</b>
     {#if irresponsive}
@@ -26,7 +27,13 @@
         {:else if item.type === "shock"}
             <p>Open: {item.isOpen ? "Yes" : "No"}</p>
         {/if}
-        <p>{Math.round(item.battery * 10) / 10}% battery</p>
+        <p
+            style={item.battery < LOW_BATTERY_THRESHOLD
+                ? "font-weight: 800;"
+                : ""}
+        >
+            {Math.round(item.battery * 10) / 10}% battery
+        </p>
     {/if}
     <button class="delete-btn" on:click={() => dispatch("click", index)}>
         <img src={deleteIcon} alt="Delete" />
