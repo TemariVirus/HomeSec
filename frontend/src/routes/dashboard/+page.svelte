@@ -16,16 +16,22 @@
     // NOTE: Set low for demostration purposes, set higher for actual use
     const DEVICE_TIMEOUT = 5 * 1000; // In milliseconds
 
-    let isAddingDevice = false;
     let addDeviceId = "";
     let addDeviceName = "";
+
     let showAddModal = false;
+    let showClips = false;
+    let isAddingDevice = false;
+    let clipsLoading = true;
 
     let username = "";
     let devices = [] as Device[];
     let deviceIrresponsive = {} as Record<string, boolean>;
     let irresponsiveOverride = false;
     let isArmed = false;
+
+    let cameraId = "";
+    let clips = [] as string[];
 
     let ws: ReturnType<typeof Websocket>;
     let websocket: WebSocket;
@@ -117,6 +123,10 @@
                 addDeviceId = "";
                 addDeviceName = "";
                 break;
+            case "list-clips":
+                clipsLoading = false;
+                clips = data;
+                break;
         }
     }
 
@@ -179,6 +189,21 @@
         saveDeviceOrder();
     }
 
+    function handleClipsOpen(e: CustomEvent<number>) {
+        const index = e.detail;
+        const device = devices[index];
+
+        clipsLoading = true;
+        ws.send(
+            JSON.stringify({
+                action: "list-clips",
+                data: device.deviceId,
+            })
+        );
+        cameraId = device.deviceId;
+        showClips = true;
+    }
+
     function handleRemove(e: CustomEvent<number>) {
         const index = e.detail;
         const deviceId = devices[index].deviceId;
@@ -215,6 +240,10 @@
                 data: isArmed,
             })
         );
+    }
+
+    function playClip(clip: string) {
+        // TODO: implement
     }
 
     function logout() {
@@ -263,7 +292,7 @@
 {#if !username}
     <LoadingSpinner />
 {:else}
-    <Modal bind:show={showAddModal} bg="#222" on:close={cancelAdd}>
+    <Modal bind:show={showAddModal} on:close={cancelAdd}>
         {#if isAddingDevice}
             <div class="spinner-container">
                 <LoadingSpinner />
@@ -291,6 +320,27 @@
         {/if}
     </Modal>
 
+    <Modal bind:show={showClips}>
+        {#if clipsLoading}
+            <div class="spinner-container">
+                <LoadingSpinner />
+            </div>
+        {:else if clips.length === 0}
+            <p>No clips</p>
+        {:else}
+            <ul>
+                {#each clips as c}
+                    <li
+                        on:click={() =>
+                            playClip(`${username}/${cameraId}/${c}`)}
+                    >
+                        {c}
+                    </li>
+                {/each}
+            </ul>
+        {/if}
+    </Modal>
+
     <div class="dashboard">
         <h1>Hello, {username}!</h1>
         <SortableList
@@ -306,6 +356,7 @@
                 irresponsive={deviceIrresponsive[item.deviceId] ??
                     irresponsiveOverride}
                 on:click={handleRemove}
+                on:open-clips={handleClipsOpen}
             />
         </SortableList>
         <div class="controls">
@@ -330,6 +381,25 @@
         --accent-color: CornflowerBlue;
     }
 
+    ul {
+        display: flex;
+        list-style: none;
+        align-items: center;
+        flex-direction: column;
+        padding: 0;
+        min-height: 60px;
+    }
+
+    li {
+        color: #ddd;
+        text-decoration: underline;
+    }
+
+    li:hover {
+        color: #fff;
+        cursor: pointer;
+    }
+
     form {
         display: flex;
         flex-direction: column;
@@ -352,6 +422,10 @@
         border: 1px solid #ccc;
     }
 
+    button:hover {
+        background-color: #ccc;
+    }
+
     form button {
         margin-top: 0.5rem;
         margin-bottom: 2rem;
@@ -363,11 +437,6 @@
         align-items: center;
         justify-content: center;
         margin: 2rem;
-    }
-
-    .spinner-container {
-        height: 450px;
-        width: 500px;
     }
 
     .id-container {

@@ -84,9 +84,7 @@
                 animate:flip={{ duration: 300 }}
                 class:over={getKey(item) === isOver}
             >
-                <slot {item} {index}>
-                    <p>{getKey(item)}</p>
-                </slot>
+                <slot {item} {index} />
             </li>
         {/each}
     </ul>
@@ -97,10 +95,14 @@
         list-style: none;
         padding: 0;
     }
+
     li {
         border: 2px dotted transparent;
         transition: border 0.1s linear;
+        padding-right: 2rem;
+        margin-right: 2rem;
     }
+
     .over {
         border-color: rgba(48, 12, 200, 0.2);
     }

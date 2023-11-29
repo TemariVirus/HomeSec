@@ -10,7 +10,7 @@
 
     let modal: HTMLElement;
     export let show: boolean;
-    export let bg: string = "gray";
+    export let bg: string = "#222";
 
     const handleKeydown = (e: KeyboardEvent) => {
         if (!show) return;
@@ -55,6 +55,7 @@
         class="modal-background"
         role="button"
         tabindex="0"
+        draggable="false"
         on:keydown={null}
         on:click={close}
     />
@@ -64,6 +65,7 @@
         role="dialog"
         aria-modal="true"
         style="background: {bg};"
+        draggable="false"
         bind:this={modal}
     >
         <button class="cancel-btn" on:click={close}>
@@ -73,6 +75,7 @@
                 alt="cancel"
                 width="54"
                 height="54"
+                draggable="false"
             />
         </button>
         <slot />

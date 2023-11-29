@@ -15,9 +15,15 @@ import {
     IoTDataPlaneClient,
     PublishCommand,
 } from "@aws-sdk/client-iot-data-plane";
+import {
+    S3Client,
+    ListObjectsV2Command,
+    DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const iotData = new IoTDataPlaneClient({});
+const s3 = new S3Client({});
 
 /**
  * @param {string} connectionId
@@ -75,6 +81,51 @@ async function removeDevice(username, deviceId) {
             UpdateExpression: `REMOVE devices[${index}]`,
         })
     );
+
+    if (devices[index].type === "camera") {
+        await deleteDeviceClips(username, deviceId);
+    }
+}
+
+/**
+ * @param {string} username
+ * @param {string} deviceId
+ */
+async function deleteDeviceClips(username, deviceId) {
+    const keys = await s3
+        .send(
+            new ListObjectsV2Command({
+                Bucket: process.env.CLIP_BUCKET,
+                Prefix: `${username}/${deviceId}/`,
+            })
+        )
+        .then((data) => data.Contents?.map((c) => c.Key));
+    await Promise.all(
+        keys.map((key) =>
+            s3.send(
+                new DeleteObjectCommand({
+                    Bucket: process.env.CLIP_BUCKET,
+                    Key: key,
+                })
+            )
+        )
+    );
+}
+
+/**
+ * @param {string} username
+ * @param {string} deviceId
+ */
+async function disconnectDevice(username, deviceId) {
+    await iotData.send(
+        new PublishCommand({
+            topic: `homesec/command/${username}/${deviceId}`,
+            qos: 1,
+            payload: JSON.stringify({
+                action: "remove-device",
+            }),
+        })
+    );
 }
 
 export async function handler(event) {
@@ -117,20 +168,12 @@ export async function handler(event) {
     }
 
     try {
-        await iotData.send(
-            new PublishCommand({
-                topic: `homesec/command/${username}/${deviceId}`,
-                qos: 1,
-                payload: JSON.stringify({
-                    action: "remove-device",
-                }),
-            })
-        );
+        await disconnectDevice(username, deviceId);
     } catch (err) {
         console.error(err);
         return {
             statusCode: 500,
-            body: "Failed to send command to device",
+            body: "Failed to disconenct device",
         };
     }
 

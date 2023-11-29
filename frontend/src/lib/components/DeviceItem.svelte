@@ -35,9 +35,15 @@
             {Math.round(item.battery * 10) / 10}% battery
         </p>
     {/if}
-    <button class="delete-btn" on:click={() => dispatch("click", index)}>
-        <img src={deleteIcon} alt="Delete" />
-    </button>
+    <div class="bottom">
+        {#if item.type === "camera"}
+            <button on:click={() => dispatch("open-clips", index)}>Clips</button
+            >
+        {/if}
+        <button class="delete-btn" on:click={() => dispatch("click", index)}>
+            <img src={deleteIcon} alt="Delete" />
+        </button>
+    </div>
 </section>
 
 <style>
@@ -60,6 +66,25 @@
         font-size: x-large;
     }
 
+    button {
+        border-radius: 100vw;
+        border: 1px solid #ccc;
+        padding: 0.5rem 0.75rem;
+        margin: auto 0.5rem;
+    }
+
+    button:hover {
+        background-color: #ccc;
+    }
+
+    .bottom {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+        margin-top: 1rem;
+    }
+
     .delete-btn {
         width: 25px;
         height: 25px;
@@ -67,7 +92,9 @@
         border: none;
         padding: 0;
         margin: 0.5rem;
-        margin-top: 1rem;
-        align-self: flex-end;
+    }
+
+    .delete-btn:hover {
+        background: none;
     }
 </style>
