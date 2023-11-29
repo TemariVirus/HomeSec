@@ -141,8 +141,14 @@ async function main(argv) {
 
     // Use user input to simulate device updates
     rl.on("line", (line) => {
+        if (line.trim() === "random") {
+            deviceInfo = generateDeviceInfo(argv.type);
+            send(connection, dataTopic, deviceInfo);
+            return;
+        }
+
         const payload = JSON.parse(line);
-        deviceInfo = { ...deviceInfo, ...payload, deviceId: argv.deviceId };
+        deviceInfo = { ...deviceInfo, ...payload };
         send(connection, dataTopic, payload);
     });
 

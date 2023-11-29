@@ -237,6 +237,27 @@
                 goto("/");
             });
     }
+
+    function deleteAccount() {
+        const token = getAuthToken();
+        clearAuthToken();
+        ws?.close();
+
+        fetch(`${PUBLIC_USER_API}/`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        })
+            .then((res) => res.text())
+            .catch((res) => {
+                console.error("Failed to delete account:", res);
+            })
+            .finally(() => {
+                goto("/");
+            });
+    }
 </script>
 
 {#if !username}
@@ -287,7 +308,7 @@
                 on:click={handleRemove}
             />
         </SortableList>
-        <div>
+        <div class="controls">
             <div class="slider">
                 <span>Armed</span>
                 <button
@@ -299,6 +320,7 @@
             </div>
             <button on:click={() => (showAddModal = true)}>Add device</button>
             <button on:click={logout}>Logout</button>
+            <button on:click={deleteAccount}>Delete account</button>
         </div>
     </div>
 {/if}
@@ -327,9 +349,12 @@
     button {
         padding: 0.5rem;
         border-radius: 100vw;
+        border: 1px solid #ccc;
+    }
+
+    form button {
         margin-top: 0.5rem;
         margin-bottom: 2rem;
-        border: 1px solid #ccc;
     }
 
     .dashboard {
@@ -361,6 +386,15 @@
     .id-container h1 {
         margin-top: 0;
         font-size: 56px;
+    }
+
+    .controls {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .controls > * {
+        margin: 1rem;
     }
 
     .slider {
