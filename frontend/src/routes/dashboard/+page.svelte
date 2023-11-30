@@ -20,9 +20,11 @@
     let addDeviceName = "";
 
     let showAddModal = false;
-    let showClips = false;
+    let showClipsModal = false;
+    let showClipModal = false;
     let isAddingDevice = false;
     let clipsLoading = true;
+    let clipLoading = true;
 
     let username = "";
     let devices = [] as Device[];
@@ -32,6 +34,8 @@
 
     let cameraId = "";
     let clips = [] as string[];
+    let clipName = "";
+    let clipUrl = "";
 
     let ws: ReturnType<typeof Websocket>;
     let websocket: WebSocket;
@@ -127,6 +131,10 @@
                 clipsLoading = false;
                 clips = data;
                 break;
+            case "get-clip":
+                clipUrl = data;
+                clipLoading = false;
+                break;
         }
     }
 
@@ -193,15 +201,21 @@
         const index = e.detail;
         const device = devices[index];
 
-        clipsLoading = true;
-        ws.send(
+        ws?.send(
             JSON.stringify({
                 action: "list-clips",
                 data: device.deviceId,
             })
         );
+        // Display old list while waiting, if this is the same camera
+        if (cameraId === device.deviceId) {
+            showClipsModal = true;
+            return;
+        }
+
+        clipsLoading = true;
         cameraId = device.deviceId;
-        showClips = true;
+        showClipsModal = true;
     }
 
     function handleRemove(e: CustomEvent<number>) {
@@ -243,7 +257,18 @@
     }
 
     function playClip(clip: string) {
-        // TODO: implement
+        ws?.send(
+            JSON.stringify({
+                action: "get-clip",
+                data: clip,
+            })
+        );
+
+        showClipsModal = false;
+
+        clipName = clip.split("/")[1];
+        clipLoading = true;
+        showClipModal = true;
     }
 
     function logout() {
@@ -320,24 +345,39 @@
         {/if}
     </Modal>
 
-    <Modal bind:show={showClips}>
+    <Modal bind:show={showClipsModal}>
         {#if clipsLoading}
             <div class="spinner-container">
                 <LoadingSpinner />
             </div>
-        {:else if clips.length === 0}
-            <p>No clips</p>
         {:else}
-            <ul>
-                {#each clips as c}
-                    <li
-                        on:click={() =>
-                            playClip(`${username}/${cameraId}/${c}`)}
-                    >
-                        {c}
-                    </li>
-                {/each}
-            </ul>
+            <h2>
+                Clips of {devices.find((d) => d.deviceId === cameraId)?.name}
+            </h2>
+            {#if clips.length === 0}
+                <p>No clips</p>
+            {:else}
+                <ul>
+                    {#each clips as c}
+                        <li on:click={() => playClip(`${cameraId}/${c}`)}>
+                            {c}
+                        </li>
+                    {/each}
+                </ul>
+            {/if}
+        {/if}
+    </Modal>
+
+    <Modal bind:show={showClipModal}>
+        {#if clipLoading}
+            <div class="spinner-container">
+                <LoadingSpinner />
+            </div>
+        {:else}
+            <h2>{clipName}</h2>
+            <video controls height="500px">
+                <source type="video/mp4" src={clipUrl} />
+            </video>
         {/if}
     </Modal>
 
@@ -422,6 +462,11 @@
         border: 1px solid #ccc;
     }
 
+    h2 {
+        align-self: center;
+        text-align: center;
+    }
+
     button:hover {
         background-color: #ccc;
     }
@@ -463,7 +508,7 @@
     }
 
     .controls > * {
-        margin: 1rem;
+        margin: 0.75rem;
     }
 
     .slider {
