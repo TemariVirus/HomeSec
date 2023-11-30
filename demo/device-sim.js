@@ -147,9 +147,13 @@ async function main(argv) {
             return;
         }
 
-        const payload = JSON.parse(line);
-        deviceInfo = { ...deviceInfo, ...payload };
-        send(connection, dataTopic, payload);
+        try {
+            const payload = JSON.parse(line);
+            deviceInfo = { ...deviceInfo, ...payload };
+            send(connection, dataTopic, payload);
+        } catch {
+            console.error("Invalid JSON");
+        }
     });
 
     // Subscribe to get commands from cloud

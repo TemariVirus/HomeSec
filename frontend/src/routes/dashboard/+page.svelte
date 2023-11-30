@@ -346,26 +346,29 @@
     </Modal>
 
     <Modal bind:show={showClipsModal}>
-        {#if clipsLoading}
-            <div class="spinner-container">
-                <LoadingSpinner />
-            </div>
-        {:else}
-            <h2>
-                Clips of {devices.find((d) => d.deviceId === cameraId)?.name}
-            </h2>
-            {#if clips.length === 0}
-                <p>No clips</p>
+        <div class="modal">
+            {#if clipsLoading}
+                <div class="spinner-container">
+                    <LoadingSpinner />
+                </div>
             {:else}
-                <ul>
-                    {#each clips as c}
-                        <li on:click={() => playClip(`${cameraId}/${c}`)}>
-                            {c}
-                        </li>
-                    {/each}
-                </ul>
+                <h2>
+                    Clips of {devices.find((d) => d.deviceId === cameraId)
+                        ?.name}
+                </h2>
+                {#if clips.length === 0}
+                    <p>No clips</p>
+                {:else}
+                    <ul>
+                        {#each clips as c}
+                            <li on:click={() => playClip(`${cameraId}/${c}`)}>
+                                {c}
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
             {/if}
-        {/if}
+        </div>
     </Modal>
 
     <Modal bind:show={showClipModal}>
@@ -500,6 +503,11 @@
     .id-container h1 {
         margin-top: 0;
         font-size: 56px;
+    }
+
+    .modal {
+        align-items: center;
+        text-align: center;
     }
 
     .controls {

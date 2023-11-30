@@ -92,6 +92,7 @@
         border: none;
         padding: 0;
         margin: 0.5rem;
+        margin-left: auto;
     }
 
     .delete-btn:hover {

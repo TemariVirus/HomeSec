@@ -42,8 +42,10 @@ async function listClips(username, deviceId) {
             Prefix: `${username}/${deviceId}/`,
         })
     );
-    return data.Contents.map((clip) => clip.Key.split("/")[2]).filter(
-        (clip) => clip
+    return (
+        data.Contents?.map((clip) => clip.Key.split("/")[2]).filter(
+            (clip) => clip
+        ) ?? []
     );
 }
 
