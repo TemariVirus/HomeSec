@@ -1,6 +1,62 @@
 # HomeSec
 
-HomeSec is a simple IoT-based home security system. It can use camera, shock, and contact sensors, and provides a dashboard accessible from the browser.
+HomeSec is an IoT-based home security system created as a school project. It can use camera, shock, and contact sensors, and provides a dashboard accessible from the browser.
+
+## DynamoDB Table Schemas
+
+### homesec
+
+Stores information about each user.
+
+| name         | type    | description                               |
+| ------------ | ------- | ----------------------------------------- |
+| username     | string  | The name of the user (partition key)      |
+| password     | string  | The user's password, hashed               |
+| salt         | string  | The salt used to hash the user's password |
+| phoneNo      | string  | The user's phone number                   |
+| isArmed      | boolean | Whether the user's home system is armed   |
+| devices      | list    | The user's devices                        |
+| sessionId    | string  | The user's current session ID             |
+| connectionId | string  | The user's current connection ID          |
+| pending      | string  | The ID of the device the user is adding   |
+
+### homesec-connections
+
+Stores the user of each connection to avoid scanning the entire `homesec` table when using the websocket API.
+
+| name     | type   | description                                                     |
+| -------- | ------ | --------------------------------------------------------------- |
+| id       | string | The connection ID of the user's current session (partition key) |
+| username | string | The name of the user                                            |
+
+## API Gateway configuration
+
+### HomeSec User
+
+A REST API. Used for creating and deleting users, and for logging in and out.
+
+| method | path    | lambda function  | lambda proxy integration |
+| ------ | ----    | ---------------  | ------------------------ |
+| POST   | /       | homesec-register | True                     |
+| DELETE | /       | homesec-delete   | True                     |
+| POST   | /login  | homesec-login    | True                     |
+| DELETE | /login  | homesec-logout   | True                     |
+
+### HomeSec Dashboard
+
+A WebSocket API. Used for connecting, disconnecting, sending data, and receiving data to and from the cloud and the frontend in real-time.
+
+| route             | lambda function           | lambda proxy integration | two-way |
+| ----------------- | ------------------------- | ------------------------ | ------- |
+| $connect          | homesec-connect           | True                     | No      |
+| $disconnect       | homesec-disconnect        | True                     | No      |
+| add-device        | homesec-add-device        | True                     | Yes     |
+| cancel-add-device | homesec-cancel-add-device | True                     | No      |
+| get-clip          | homesec-get-clip          | True                     | Yes     |
+| get-info          | homesec-get-info          | True                     | Yes     |
+| list-clips        | homesec-list-clips        | True                     | Yes     |
+| remove-device     | homesec-remove-device     | True                     | No      |
+| set-armed         | homesec-set-armed         | True                     | No      |
 
 ## Deployment
 
@@ -11,9 +67,9 @@ PUBLIC_USER_API=https://[your REST API URL]
 PUBLIC_WEBSOCKET_API=wss://[your Websocket API URL]
 ```
 
-The `lambda/` directory contains the various Lambda functions used by the backend. Each folder in the `rest/` folder contains a lambda function used for the API Gateway REST API, and each folder in the `websocket/` folder contains a lambda function used for the API Gateway Websocket API, and each folder in the `rules-engine/` folder contains a lambda function used for IoT Rules Engine.
+The `lambda/` directory contains the various Lambda functions used by the backend. Each folder in the `rest/` folder contains a lambda function used for the API Gateway REST API, and each folder in the `websocket/` folder contains a lambda function used for the API Gateway Websocket API, and each folder in the `rules-engine/` folder contains a lambda function used for IoT Rules Engine. The `index.mjs` file in each folder in the `rules-engine/` folder also contains the SQL statement used for that rule.
 
-## Build and run the dashboard locally
+## Build and run the frontend locally
 
 ```bash
 $ cd ./frontend 
