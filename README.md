@@ -2,6 +2,8 @@
 
 HomeSec is an IoT-based home security system created as a school project. It can use camera, shock, and contact sensors, and provides a dashboard accessible from the browser.
 
+Check out the repo [here](https://github.com/Zemogus/HomeSec).
+
 ## DynamoDB Table Schemas
 
 ### homesec
@@ -101,3 +103,7 @@ The device ID will be provided by the dashboard after you click the "Add device"
 When the simulated device first connects to the IoT endpoint, it automatically generates random data for the device and publishes it. To send your own data, you can type a stringified JSON object into the console, followed by a newline, like so: `{"yourField": "yourValue"}`. To randomise all fields again, type `random` into the console and press enter.
 
 Upon being removed through the dashboard, the simulated device will automatically disconnect itself from the IoT endpoint.
+
+## A note on AWS Simple Notification Service (SNS)
+
+Sending sms messages to any number requires creating a case with AWS Support and requesting to have your account removed from the sandbox (https://stackoverflow.com/a/76839295). For HomeSec to send messages without moving the AWS account out of the sandbox, you will need to verify the phone number you wish to send messages to.
