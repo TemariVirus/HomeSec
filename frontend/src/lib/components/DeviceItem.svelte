@@ -21,7 +21,7 @@
         <p>Device irresponsive</p>
     {:else}
         {#if item.type === "camera"}
-            <p>Live feed: <a href={item.streamUrl}>{item.streamUrl}</a></p>
+            <!-- <p>Live feed: <a href={item.streamUrl}>{item.streamUrl}</a></p> -->
         {:else if item.type === "contact"}
             <p>Open: {item.isOpen ? "Yes" : "No"}</p>
         {:else if item.type === "shock"}

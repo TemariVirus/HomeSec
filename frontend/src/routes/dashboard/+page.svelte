@@ -48,7 +48,6 @@
 
         ws = temp;
         websocket = get(ws.ws)!;
-        ws.data.subscribe(handleData);
     });
 
     function connect(): ReturnType<typeof Websocket> | null {
@@ -59,17 +58,16 @@
         }
 
         return Websocket(`${PUBLIC_WEBSOCKET_API}?token=${token}`, {
-            onConnected: (socket) => {
-                getInfo(socket); // Get initial info
-                getInfo(socket); // Get updates to check if device is still connected
+            onConnected: getInfo,
+            onMessage: (_, msg) => {
+                handleData(msg);
             },
-            onError: async (_) => {
-                logout();
-            },
+            onError: logout,
         });
     }
 
     function handleData(msg: any) {
+        msg = msg.data;
         console.log("Received message from websocket:", msg);
 
         let json;
