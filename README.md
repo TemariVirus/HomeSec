@@ -35,6 +35,12 @@ Stores the user of each connection to avoid scanning the entire `homesec` table 
 
 A REST API. Used for creating and deleting users, and for logging in and out.
 
+CORS is enabled for all routes.
+For all routes, gateway responses were configured for default 4XX and 5XX responses.
+All applicable values were added to the `Access-Control-Allow-Methods` header.
+The `Access-Control-Allow-Headers` header was set to `Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token`.
+The `Access-Control-Allow-Origin` header was set to `*`.
+
 | method | path    | lambda function  | lambda proxy integration |
 | ------ | ----    | ---------------  | ------------------------ |
 | POST   | /       | homesec-register | True                     |
